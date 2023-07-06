@@ -18,6 +18,8 @@ contract SberAMM {
 		uint amount1;
         
         uint totalShares;
+
+        bool isStable;
 	}
 
     // @dev address token0 => address token1
@@ -47,7 +49,7 @@ contract SberAMM {
     }
 
 	// @dev create pool
-	function createPair(address tokenA, address tokenB) external returns (uint) {
+	function createPair(address tokenA, address tokenB, bool _isStable) external returns (uint) {
         require(tokenA != tokenB, 'two identical addresses');
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), 'Zero Address');
@@ -57,6 +59,8 @@ contract SberAMM {
 
 		Pools[PID].token0 = token0;
 		Pools[PID].token1 = token1;
+		Pools[PID].isStable = _isStable;
+
         getPair[token0] = token1;
 		PIDs++;
 
@@ -128,6 +132,7 @@ contract SberAMM {
 
 	// @dev swap tokens in pool
     function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
+        require(Pools[PID].isStable == false, "not x * y = k");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
         
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
@@ -162,6 +167,7 @@ contract SberAMM {
 
         
     function swapStable(uint PID, address tokenIn, uint amount) external returns (uint) {
+        require(Pools[PID].isStable == true, "not x^2 * y^2 = k^2");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
         
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
@@ -172,7 +178,7 @@ contract SberAMM {
         // Calculate the invariant k (square)
         uint kSquare = (ud(Pools[PID].amount0).pow(ud(2))).mul((ud(Pools[PID].amount1).pow(ud(2)))).unwrap();
 
-        (uint newX, uint newY, uint amountOut) = calculateAmounts(PID, tokenIn, amountMinusFee, kSquare);
+        uint amountOut = calculateAmounts(PID, tokenIn, amountMinusFee, kSquare);
 
         // transfer amount token out
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
@@ -183,7 +189,7 @@ contract SberAMM {
         return uint(amountOut);
     }
 
-    function calculateAmounts(uint PID, address tokenIn, uint amountMinusFee, uint kSquare) internal returns (uint, uint, uint) {
+    function calculateAmounts(uint PID, address tokenIn, uint amountMinusFee, uint kSquare) internal returns (uint) {
         uint newX;
         uint newY;
         uint amountOut;
@@ -209,7 +215,7 @@ contract SberAMM {
             Pools[PID].amount0 = newX;
             Pools[PID].amount1 = newY;
         }
-        return (newX, newY, amountOut);
+        return amountOut;
     }
 
 
