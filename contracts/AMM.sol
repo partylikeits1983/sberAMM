@@ -35,7 +35,6 @@ contract AMM {
 	// @dev user address => Position struct
 	mapping(address => Position) public Positions;
 
-
 	// @dev create pool
 	function createPair(address token0, address token1) public returns (uint) {
 		uint PID = PIDs.length;
@@ -75,7 +74,6 @@ contract AMM {
 		uint token_1_amount = Positions[msg.sender].amount1;
 		*/
 	}
-
 
 	// @dev hypothetical swap: 
 	// x = 5
