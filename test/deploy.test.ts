@@ -85,14 +85,47 @@ describe("evm_chess Wager Unit Tests", function () {
       let amountA = ethers.parseEther("100.0");
       let amountB = ethers.parseEther("100.0");
 
-
       await tokenA.approve(await amm.getAddress(), amountA);
       await tokenB.approve(await amm.getAddress(), amountB);
-
  
       await amm.deposit(0, amountA, amountB);
 
+    });
+
+    it("Should Execute Swap", async function () {
+      const { deployer, tokenA, tokenB, amm } = await loadFixture(
+        deploy
+      );
+
+      console.log("Deployer", deployer.address);
+
+      const balanceA = await tokenA.balanceOf(deployer.address);
+      console.log(balanceA);
+
+      const balanceB = await tokenA.balanceOf(deployer.address);
+      console.log(balanceB);
+
+      const tokenA_address = await tokenA.getAddress();
+      const tokenB_address = await tokenB.getAddress();
+
+      await amm.createPair(tokenA_address, tokenB_address);
+
+      let amountA = ethers.parseEther("1000.0");
+      let amountB = ethers.parseEther("1000.0");
+
+      await tokenA.approve(await amm.getAddress(), amountA);
+      await tokenB.approve(await amm.getAddress(), amountB);
+ 
+      await amm.deposit(0, amountA, amountB);
+
+      // Swap
+
+      await tokenA.approve(await amm.getAddress(), amountA);
+
+      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("5.0"));
+
 
     });
+
   });
 });
