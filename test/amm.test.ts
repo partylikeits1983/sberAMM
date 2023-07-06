@@ -1,6 +1,7 @@
 import { loadFixture } from "@nomicfoundation/hardhat-network-helpers";
 import { expect } from "chai";
 import { ethers } from "hardhat";
+import { boolean } from "hardhat/internal/core/params/argumentTypes";
 
 describe("evm_chess Wager Unit Tests", function () {
   // We define a fixture to reuse the same setup in every test.
@@ -178,13 +179,26 @@ describe("evm_chess Wager Unit Tests", function () {
  
       await amm.deposit(0, amountA, amountB);
 
+      const feeAccrued0 = await amm.viewEarnedFees(0, await tokenA.getAddress())
+      console.log("fee accrued:", feeAccrued0);
+
       console.log("exchange rate t0", await amm.exchangeRate(0, await tokenA.getAddress()));
 
       // Swap
       await tokenA.approve(await amm.getAddress(), amountA);
-      await amm.swapStable(0, await tokenA.getAddress(), ethers.parseEther("1000"));
+      await amm.swapStable(0, await tokenA.getAddress(), ethers.parseEther("100"));
 
       console.log("exchange rate t1", await amm.exchangeRate(0, await tokenA.getAddress()));
+
+      const feeAccrued = await amm.viewEarnedFees(0, await tokenA.getAddress())
+
+      let balance_t0 = await tokenA.balanceOf(await deployer.getAddress());
+      await amm.withdrawFees(0, await tokenA.getAddress());
+      let balance_t1 = await tokenA.balanceOf(await deployer.getAddress());
+
+      console.log("fees transfered: ", balance_t1 - balance_t0);
+
+      expect(feeAccrued).to.be.equal(balance_t1 - balance_t0);
 
     });
   });

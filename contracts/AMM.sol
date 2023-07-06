@@ -17,8 +17,17 @@ contract SberAMM {
         uint amount1;
         uint totalShares;
         bool isStable;
-        mapping(address => uint) lastWithdrawnFees;
+        uint fee0;  
+        uint fee1;
     }
+
+    struct Fee {
+        uint fee0;
+        uint fee1;
+    }
+
+    // PID => address user => Fee
+    mapping(uint => mapping(address => Fee)) Fees;
 
     // @dev address token0 => address token1
     mapping(address => address) public getPair;
@@ -229,34 +238,30 @@ contract SberAMM {
         return amountOut;
     }
 
-    function withdrawFees(uint PID, address token) public {
+    function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];
-        uint totalFee = (token == pool.token0) ? pool.amount0 : pool.amount1;
+        uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1; 
 
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No shares found for the user");
 
-        uint fee = (totalFee * share) / pool.totalShares;
-        uint lastWithdrawnFee = pool.lastWithdrawnFees[msg.sender];
-        require(fee > lastWithdrawnFee, "No fees to withdraw");
+        Fee memory userFees = Fees[PID][msg.sender];
+        uint lastWithdrawnFee = (token == pool.token0) ? userFees.fee0 : userFees.fee1;
 
-        uint feeToWithdraw = fee - lastWithdrawnFee;
-        pool.lastWithdrawnFees[msg.sender] = fee;
+        uint fee = ud(totalFee).sub(ud(lastWithdrawnFee)).mul(ud(share)).div(ud(pool.totalShares)).unwrap();
 
-        // Assuming your contract is an ERC20 type
-        // Transfer the fee to the user
-        IERC20(token).transfer(msg.sender, feeToWithdraw);
+        IERC20(token).safeTransfer(msg.sender, fee);
     }
-
-
 
     // @dev separate function to handle fees
     function handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
             Pools[PID].amount0 += fee;
+            Pools[PID].fee0 += fee; 
         } else {
             Pools[PID].amount1 += fee;
+            Pools[PID].fee1 += fee; 
         }
     }
 
@@ -294,6 +299,22 @@ contract SberAMM {
 
         return (rate, tvl);
     }
+
+function viewEarnedFees(uint PID, address token) external view pidExists(PID) returns (uint) {
+    Pool storage pool = Pools[PID];
+    uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1; 
+
+    uint share = PoolShares[msg.sender][PID];
+    require(share > 0, "No shares found for the user");
+
+    Fee memory userFees = Fees[PID][msg.sender];
+    uint lastWithdrawnFee = (token == pool.token0) ? userFees.fee0 : userFees.fee1;
+
+    uint fee = ud(totalFee).sub(ud(lastWithdrawnFee)).mul(ud(share)).div(ud(pool.totalShares)).unwrap();
+
+    return fee;
+}
+
 
     // @dev given pool id and token address, return the exchange rate
     function exchangeRate(
