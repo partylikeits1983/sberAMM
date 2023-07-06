@@ -56,8 +56,5 @@ describe("evm_chess Wager Unit Tests", function () {
       await factory.createPair(await tokenA.getAddress(), await tokenB.getAddress()); 
 
     });
-
-
-
   });
 });
