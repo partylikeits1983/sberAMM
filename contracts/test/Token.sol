@@ -4,7 +4,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Token is ERC20 {
-    uint constant _initial_supply = 1e18 * 1e6;
+    uint constant _initial_supply = 100 * 1e18 * 1e6; // 100 million
 
     string _name = "Token";
     string _symbol = "TK";

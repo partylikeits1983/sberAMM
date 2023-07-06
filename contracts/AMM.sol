@@ -7,7 +7,6 @@ import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
 /// @title SberAMM 
 /// @notice Sberbank Automated Market Maker 
 contract SberAMM {
-    // using SD for int256;
 	using SafeERC20 for IERC20;
 
 	// @dev struct for pool
@@ -115,33 +114,102 @@ contract SberAMM {
 	// amountOut = (-dx * y) / (dx + x)
 
 	// @dev swap tokens in pool
-	function swap(uint PID, address tokenIn, uint amount) public returns (uint) {
-		require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
+    function swap(uint PID, address tokenIn, uint amount) public returns (uint) {
+        require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
+        
+        address tokenOut = getOtherTokenAddr(PID, tokenIn);
+        uint amountOut;
 
-		address tokenOut = getOtherTokenAddr(PID, tokenIn);
-		uint amountOut;
+        uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        uint amountMinusFee = amount - fee;
 
-		if(Pools[PID].token0 == tokenIn) {
-			// amount out Y
-			// Pools[PID].amount0 += amount;
-			amountOut = ud(amount).mul(ud(Pools[PID].amount1)).div((ud(amount) + ud(Pools[PID].amount0))).unwrap();
-			Pools[PID].amount0 += amount;
+        if(Pools[PID].token0 == tokenIn) {
+            // amount out Y
+            // Pools[PID].amount0 += amount;
+            amountOut = ud(amountMinusFee).mul(ud(Pools[PID].amount1)).div((ud(amountMinusFee) + ud(Pools[PID].amount0))).unwrap();
+            Pools[PID].amount0 += amountMinusFee;
 
-			Pools[PID].amount1 -= uint(amountOut);
-		} else {
-			// amount out X
-			// Pools[PID].amount1 += amount;
-            amountOut = ud(amount).mul(ud(Pools[PID].amount0)).div((ud(amount) + ud(Pools[PID].amount1))).unwrap();
-			Pools[PID].amount1 += amount;
+            Pools[PID].amount1 -= uint(amountOut);
+        } else {
+            // amount out X
+            // Pools[PID].amount1 += amount;
+            amountOut = ud(amountMinusFee).mul(ud(Pools[PID].amount0)).div((ud(amountMinusFee) + ud(Pools[PID].amount1))).unwrap();
+            Pools[PID].amount1 += amountMinusFee;
 
-			Pools[PID].amount0 -= uint(amountOut);
-		}
-		// transfer amount token out
-		IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
+            Pools[PID].amount0 -= uint(amountOut);
+        }
+        // transfer amount token out
+        IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
-		return uint(amountOut);
-	}
+        // Handle fee logic
+        handleFees(PID, tokenIn, fee);
+        
+        return uint(amountOut);
+    }
 
+        
+    function swapStable(uint PID, address tokenIn, uint amount) public returns (uint) {
+        require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
+        
+        address tokenOut = getOtherTokenAddr(PID, tokenIn);
+
+        uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        uint amountMinusFee = amount - fee;
+
+        // Calculate the invariant k (square)
+        uint kSquare = (ud(Pools[PID].amount0).pow(ud(2))).mul((ud(Pools[PID].amount1).pow(ud(2)))).unwrap();
+
+        (uint newX, uint newY, uint amountOut) = calculateAmounts(PID, tokenIn, amountMinusFee, kSquare);
+
+        // transfer amount token out
+        IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
+
+        // Handle fee logic
+        handleFees(PID, tokenIn, fee);
+        
+        return uint(amountOut);
+    }
+
+    function calculateAmounts(uint PID, address tokenIn, uint amountMinusFee, uint kSquare) internal returns (uint, uint, uint) {
+        uint newX;
+        uint newY;
+        uint amountOut;
+
+        if(Pools[PID].token0 == tokenIn) {
+            // amount out Y
+            
+            newX = Pools[PID].amount0 + amountMinusFee;
+            newY = (ud(kSquare) / ud(newX).pow(ud(2))).sqrt().unwrap();
+            amountOut = Pools[PID].amount1 - newY;
+
+            Pools[PID].amount0 = newX;
+            Pools[PID].amount1 = newY;
+            
+        } else {
+            // amount out X
+            
+            newY = Pools[PID].amount1 + amountMinusFee;
+            newX = (ud(kSquare) / ud(newY).pow(ud(2))).sqrt().unwrap();
+
+            amountOut = Pools[PID].amount0 - newX;
+
+            Pools[PID].amount0 = newX;
+            Pools[PID].amount1 = newY;
+        }
+        return (newX, newY, amountOut);
+    }
+
+
+
+    // A separate function to handle fees
+    function handleFees(uint PID, address tokenIn, uint fee) private {
+        // Distribute fees among liquidity providers
+        if (Pools[PID].token0 == tokenIn) {
+            Pools[PID].amount0 += fee;
+        } else {
+            Pools[PID].amount1 += fee;
+        }
+    }
 
 	// VIEW FUNCTIONS
 	// X * Y = K
