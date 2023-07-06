@@ -1,8 +1,8 @@
 {
-    "singleQuote": true,
+    "singleQuote": false,
     "semi": true,
-    "printWidth": 80,
-    "tabWidth": 2,
+    "printWidth": 100,
+    "tabWidth": 4,
     "overrides": [
       {
         "files": "*.sol",
