@@ -129,13 +129,17 @@ describe("evm_chess Wager Unit Tests", function () {
  
       await amm.deposit(0, amountA, amountB);
 
-      console.log("exchange rate t0", await amm.exchangeRate(0, await tokenA.getAddress()));
+      const rate0 = Number(await amm.exchangeRate(0, await tokenA.getAddress()));
+      console.log("exchange rate t0", rate0);
 
       // Swap
       await tokenA.approve(await amm.getAddress(), amountA);
-      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("1000"));
+      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("100"));
 
-      console.log("exchange rate t1", await amm.exchangeRate(0, await tokenA.getAddress()));
+      const rate1 = Number(await amm.exchangeRate(0, await tokenA.getAddress()));
+      console.log("exchange rate t1", rate1);
+
+      console.log("slippage:", (rate1 - rate0) / rate1 * 100, "%");
 
       // Deposit User0
       const depositAmountA = ethers.parseEther("1000");
@@ -182,13 +186,17 @@ describe("evm_chess Wager Unit Tests", function () {
       const feeAccrued0 = await amm.viewEarnedFees(0, await tokenA.getAddress())
       console.log("fee accrued:", feeAccrued0);
 
-      console.log("exchange rate t0", await amm.exchangeRate(0, await tokenA.getAddress()));
+      const rate0 = Number(await amm.exchangeRate(0, await tokenA.getAddress()));
+      console.log("exchange rate t0", rate0);
 
       // Swap
       await tokenA.approve(await amm.getAddress(), amountA);
-      await amm.swapStable(0, await tokenA.getAddress(), ethers.parseEther("100"));
+      await amm.swapStable(0, await tokenA.getAddress(), ethers.parseEther("10000"));
 
-      console.log("exchange rate t1", await amm.exchangeRate(0, await tokenA.getAddress()));
+      const rate1 = Number(await amm.exchangeRate(0, await tokenA.getAddress()));
+      console.log("exchange rate t1", rate1);
+
+      console.log("slippage:", (rate1 - rate0) / rate1 * 100, "%");
 
       const feeAccrued = await amm.viewEarnedFees(0, await tokenA.getAddress())
 
