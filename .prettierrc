@@ -7,7 +7,7 @@
       {
         "files": "*.sol",
         "options": {
-          "parser": "solidity"
+          "plugins": ["prettier-plugin-solidity"]
         }
       }
     ]
