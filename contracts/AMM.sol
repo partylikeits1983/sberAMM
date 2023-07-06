@@ -53,59 +53,54 @@ contract AMM {
 		return PID;
 	}
 
-// Let's assume PoolShares is a mapping that represents the pool tokens for each user
-// for each pool.
+    // @dev deposit tokens into pool and create liquidity position
+    function deposit(uint PID, uint amount_token0, uint amount_token1) public {
+        address token0 = Pools[PID].token0;
+        address token1 = Pools[PID].token1;
 
-// @dev deposit tokens into pool and create liquidity position
-function deposit(uint PID, uint amount_token0, uint amount_token1) public {
-    address token0 = Pools[PID].token0;
-    address token1 = Pools[PID].token1;
+        require(token0 != address(0), "not initialized X");
+        require(token1 != address(0), "not initialized Y");
 
-    require(token0 != address(0), "not initialized X");
-    require(token1 != address(0), "not initialized Y");
+        IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
+        IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
 
-    IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
-    IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
+        UD60x18 liquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt();
 
-    UD60x18 liquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt();
+        uint totalLiquidity = liquidity.unwrap();
+        PoolShares[msg.sender][PID] += totalLiquidity;
+        Pools[PID].totalShares += totalLiquidity;
+        
+        Pools[PID].amount0 += amount_token0;
+        Pools[PID].amount1 += amount_token1;
+    }
 
-    uint totalLiquidity = liquidity.unwrap();
-    PoolShares[msg.sender][PID] += totalLiquidity;
-    Pools[PID].totalShares += totalLiquidity;
-    
-    Pools[PID].amount0 += amount_token0;
-    Pools[PID].amount1 += amount_token1;
-}
+    // @dev withdraw tokens from pool and destroy liquidity position
+    function withdraw(uint PID) public returns (uint, uint) {
+        uint share = PoolShares[msg.sender][PID];
+        require(share > 0, "No pool shares to withdraw");
 
+        uint amount_token0 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount0)).unwrap();
+        uint amount_token1 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount1)).unwrap();
 
-// @dev withdraw tokens from pool and destroy liquidity position
-function withdraw(uint PID) public returns (uint, uint) {
-    uint share = PoolShares[msg.sender][PID];
-    require(share > 0, "No pool shares to withdraw");
+        require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
+        require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
 
-    uint amount_token0 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount0)).unwrap();
-    uint amount_token1 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount1)).unwrap();
+        // Update the total amount of tokens in the pool
+        Pools[PID].amount0 -= amount_token0;
+        Pools[PID].amount1 -= amount_token1;
 
-    require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
-    require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
+        // Update the total shares of the pool
+        Pools[PID].totalShares -= share;
 
-    // Update the total amount of tokens in the pool
-    Pools[PID].amount0 -= amount_token0;
-    Pools[PID].amount1 -= amount_token1;
+        // Burn the pool shares
+        PoolShares[msg.sender][PID] = 0;
 
-    // Update the total shares of the pool
-    Pools[PID].totalShares -= share;
+        // Transfer the tokens back to the user
+        IERC20(Pools[PID].token0).safeTransfer(msg.sender, amount_token0);
+        IERC20(Pools[PID].token1).safeTransfer(msg.sender, amount_token1);
 
-    // Burn the pool shares
-    PoolShares[msg.sender][PID] = 0;
-
-    // Transfer the tokens back to the user
-    IERC20(Pools[PID].token0).safeTransfer(msg.sender, amount_token0);
-    IERC20(Pools[PID].token1).safeTransfer(msg.sender, amount_token1);
-
-    return (amount_token0, amount_token1);
-}
-
+        return (amount_token0, amount_token1);
+    }
 
 	// @dev hypothetical swap: 
 	// x = 5
@@ -151,7 +146,6 @@ function withdraw(uint PID) public returns (uint, uint) {
 
 
 	// VIEW FUNCTIONS
-
 	// X * Y = K
 
 	// pool = 10x & 5y
@@ -183,7 +177,6 @@ function withdraw(uint PID) public returns (uint, uint) {
 		return (rate, tvl);
 	}
 
-
 	// @dev given pool id and token address, return the exchange rate
 	function exchangeRate(uint PID, address token0) public view returns (uint rate) {
 		address poolX = Pools[PID].token0;
@@ -202,7 +195,6 @@ function withdraw(uint PID) public returns (uint, uint) {
 		return rate;
 	}
 
-
 	// @dev given a pool id and a token address, return the other token address
 	function getOtherTokenAddr(uint PID, address token0) public view returns (address token1) {
 		address poolX = Pools[PID].token0;
@@ -217,10 +209,8 @@ function withdraw(uint PID) public returns (uint, uint) {
 		return token1;
 	}
 
-
 	// @dev get number of pools in contract
 	function numberOfPools() public view returns (uint) {
 		return PIDs.length;
 	}
-	
 }

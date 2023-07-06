@@ -20,7 +20,14 @@ describe("evm_chess Wager Unit Tests", function () {
       }
     });
     const amm = await AMM.deploy();
-    
+
+    // send erc20 tokens to user1
+    await tokenA.connect(deployer).transfer(user0.address, ethers.parseEther("10000"));
+    await tokenB.connect(deployer).transfer(user0.address, ethers.parseEther("10000"));
+
+    await tokenA.connect(deployer).transfer(user1.address, ethers.parseEther("10000"));
+    await tokenB.connect(deployer).transfer(user1.address, ethers.parseEther("10000"));
+
     return {
       deployer,
       user0,
@@ -123,6 +130,48 @@ describe("evm_chess Wager Unit Tests", function () {
       await tokenA.approve(await amm.getAddress(), amountA);
 
       await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("5.0"));
+
+    });
+    it("Should Execute Deposit, Swap, Withdraw", async function () {
+      const { deployer, user0, user1, tokenA, tokenB, amm } = await loadFixture(
+        deploy
+      );
+
+      console.log("Deployer", deployer.address);
+
+      const balanceA = await tokenA.balanceOf(deployer.address);
+      console.log(balanceA);
+
+      const balanceB = await tokenA.balanceOf(deployer.address);
+      console.log(balanceB);
+
+      const tokenA_address = await tokenA.getAddress();
+      const tokenB_address = await tokenB.getAddress();
+
+      await amm.createPair(tokenA_address, tokenB_address);
+
+      let amountA = ethers.parseEther("100000.0");
+      let amountB = ethers.parseEther("100000.0");
+
+      await tokenA.approve(await amm.getAddress(), amountA);
+      await tokenB.approve(await amm.getAddress(), amountB);
+ 
+      await amm.deposit(0, amountA, amountB);
+
+      // Swap
+      await tokenA.approve(await amm.getAddress(), amountA);
+      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("5.0"));
+
+      // Deposit User0
+      await tokenA.connect(user0).approve(await amm.getAddress(), amountA);
+      await tokenB.connect(user0).approve(await amm.getAddress(), amountA);
+
+      const amount = ethers.parseEther("100");
+      await amm.connect(user0).deposit(0, amount, amount);
+
+      // withdraw
+      await amm.connect(deployer).withdraw(0);
+
 
     });
 
