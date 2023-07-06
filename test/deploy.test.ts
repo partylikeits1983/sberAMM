@@ -160,7 +160,7 @@ describe("evm_chess Wager Unit Tests", function () {
 
       // Swap
       await tokenA.approve(await amm.getAddress(), amountA);
-      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("5.0"));
+      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("100"));
 
       // Deposit User0
       await tokenA.connect(user0).approve(await amm.getAddress(), amountA);
@@ -169,9 +169,15 @@ describe("evm_chess Wager Unit Tests", function () {
       const amount = ethers.parseEther("100");
       await amm.connect(user0).deposit(0, amount, amount);
 
+      const totalLiquidity0 = await amm.Pools(0);
+      console.log("pools: ", totalLiquidity0);
+
       // withdraw
       await amm.connect(deployer).withdraw(0);
 
+      const totalLiquidity1 = await amm.Pools(0);
+      console.log("pools: ", totalLiquidity1);
+ 
 
     });
 
