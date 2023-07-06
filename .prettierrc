@@ -5,7 +5,7 @@
     "tabWidth": 4,
     "overrides": [
       {
-        "files": "*.sol",
+        "files": ["*.sol", "*.ts"],
         "options": {
           "plugins": ["prettier-plugin-solidity"]
         }
