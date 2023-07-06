@@ -9,8 +9,8 @@ import "./libraries/Math.sol";
 /// @title SberAMM 
 /// @notice in development
 contract AMM {
-	using SD for int256;
-	using SafeERC20 for IERC20; 
+    using SD for int256;
+	using SafeERC20 for IERC20;
 
 	// @dev struct for pool
 	struct Pool {
@@ -19,6 +19,8 @@ contract AMM {
 
 		uint amount0;
 		uint amount1;
+        
+        uint totalShares;
 	}
 
 	// @dev struct for user liquidity position
@@ -36,6 +38,9 @@ contract AMM {
 	// @dev user address => Position struct
 	mapping(address => Position) public Positions;
 
+    // @dev user address => PID => shares
+    mapping (address => mapping (uint => uint)) public PoolShares;
+
 	// @dev create pool
 	function createPair(address token0, address token1) public returns (uint) {
 		uint PID = PIDs.length;
@@ -48,16 +53,59 @@ contract AMM {
 		return PID;
 	}
 
-	// @dev deposit tokens into pool and create liquidity position
-	// @dev withdraw tokens from pool and destroy liquidity position
-	function withdraw() public {
-		// TODO
-		// @dev withdraw tokens from pool without affecting the exchange rate
-		/*
-		uint token_0_amount = Positions[msg.sender].amount0;
-		uint token_1_amount = Positions[msg.sender].amount1;
-		*/
-	}
+// Let's assume PoolShares is a mapping that represents the pool tokens for each user
+// for each pool.
+
+// @dev deposit tokens into pool and create liquidity position
+function deposit(uint PID, uint amount_token0, uint amount_token1) public {
+    address token0 = Pools[PID].token0;
+    address token1 = Pools[PID].token1;
+
+    require(token0 != address(0), "not initialized X");
+    require(token1 != address(0), "not initialized Y");
+
+    IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
+    IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
+
+    UD60x18 liquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt();
+
+    uint totalLiquidity = liquidity.unwrap();
+    PoolShares[msg.sender][PID] += totalLiquidity;
+    Pools[PID].totalShares += totalLiquidity;
+    
+    Pools[PID].amount0 += amount_token0;
+    Pools[PID].amount1 += amount_token1;
+}
+
+
+// @dev withdraw tokens from pool and destroy liquidity position
+function withdraw(uint PID) public returns (uint, uint) {
+    uint share = PoolShares[msg.sender][PID];
+    require(share > 0, "No pool shares to withdraw");
+
+    uint amount_token0 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount0)).unwrap();
+    uint amount_token1 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount1)).unwrap();
+
+    require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
+    require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
+
+    // Update the total amount of tokens in the pool
+    Pools[PID].amount0 -= amount_token0;
+    Pools[PID].amount1 -= amount_token1;
+
+    // Update the total shares of the pool
+    Pools[PID].totalShares -= share;
+
+    // Burn the pool shares
+    PoolShares[msg.sender][PID] = 0;
+
+    // Transfer the tokens back to the user
+    IERC20(Pools[PID].token0).safeTransfer(msg.sender, amount_token0);
+    IERC20(Pools[PID].token1).safeTransfer(msg.sender, amount_token1);
+
+    return (amount_token0, amount_token1);
+}
+
 
 	// @dev hypothetical swap: 
 	// x = 5
