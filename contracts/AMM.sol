@@ -46,15 +46,9 @@ contract SberAMM {
     }
 
     // @dev create pool
-    function createPair(
-        address tokenA,
-        address tokenB,
-        bool _isStable
-    ) external returns (uint) {
+    function createPair(address tokenA, address tokenB, bool _isStable) external returns (uint) {
         require(tokenA != tokenB, "two identical addresses");
-        (address token0, address token1) = tokenA < tokenB
-            ? (tokenA, tokenB)
-            : (tokenB, tokenA);
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), "Zero Address");
         require(getPair[token0] != token1, "Pair already exists");
 
@@ -71,27 +65,15 @@ contract SberAMM {
     }
 
     // @dev deposit tokens into pool and create liquidity position
-    function deposit(
-        uint PID,
-        uint amount_token0,
-        uint amount_token1
-    ) external pidExists(PID) {
+    function deposit(uint PID, uint amount_token0, uint amount_token1) external pidExists(PID) {
         address token0 = Pools[PID].token0;
         address token1 = Pools[PID].token1;
 
         require(token0 != address(0), "not initialized X");
         require(token1 != address(0), "not initialized Y");
 
-        IERC20(token0).safeTransferFrom(
-            msg.sender,
-            address(this),
-            amount_token0
-        );
-        IERC20(token1).safeTransferFrom(
-            msg.sender,
-            address(this),
-            amount_token1
-        );
+        IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
+        IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
 
         UD60x18 liquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt();
 
@@ -117,14 +99,8 @@ contract SberAMM {
             .mul(ud(Pools[PID].amount1))
             .unwrap();
 
-        require(
-            Pools[PID].amount0 >= amount_token0,
-            "Insufficient pool balance for token0"
-        );
-        require(
-            Pools[PID].amount1 >= amount_token1,
-            "Insufficient pool balance for token1"
-        );
+        require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
+        require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
 
         // Update the total amount of tokens in the pool
         Pools[PID].amount0 -= amount_token0;
@@ -158,15 +134,9 @@ contract SberAMM {
     // amountOut = (-dx * y) / (dx + x)
 
     // @dev swap tokens in pool
-    function swap(
-        uint PID,
-        address tokenIn,
-        uint amount
-    ) external pidExists(PID) returns (uint) {
+    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
         require(Pools[PID].isStable == false, "not x * y = k");
-        require(
-            IERC20(tokenIn).transferFrom(msg.sender, address(this), amount)
-        );
+        require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
         uint amountOut;
@@ -204,15 +174,9 @@ contract SberAMM {
         return uint(amountOut);
     }
 
-    function swapStable(
-        uint PID,
-        address tokenIn,
-        uint amount
-    ) external returns (uint) {
+    function swapStable(uint PID, address tokenIn, uint amount) external returns (uint) {
         require(Pools[PID].isStable == true, "not x^2 * y^2 = k^2");
-        require(
-            IERC20(tokenIn).transferFrom(msg.sender, address(this), amount)
-        );
+        require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
 
@@ -224,12 +188,7 @@ contract SberAMM {
             .mul((ud(Pools[PID].amount1).pow(ud(2))))
             .unwrap();
 
-        uint amountOut = calculateAmounts(
-            PID,
-            tokenIn,
-            amountMinusFee,
-            kSquare
-        );
+        uint amountOut = calculateAmounts(PID, tokenIn, amountMinusFee, kSquare);
 
         // transfer amount token out
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
