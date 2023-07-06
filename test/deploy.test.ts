@@ -8,7 +8,8 @@ describe("evm_chess Wager Unit Tests", function () {
     const [deployer, user0, user1] = await ethers.getSigners();
 
     const ERC20_token = await ethers.getContractFactory("ERC20");
-    const token = await ERC20_token.deploy();
+    const tokenA = await ERC20_token.deploy();
+    const tokenB = await ERC20_token.deploy();
 
     const FACTORY = await ethers.getContractFactory("UniswapV2Factory");
     const factory = await FACTORY.deploy(deployer.address);
@@ -17,25 +18,46 @@ describe("evm_chess Wager Unit Tests", function () {
       deployer,
       user0,
       user1,
-      token,
+      tokenA,
+      tokenB,
       factory
     };
   }
 
   describe("SberAMM Tests", function () {
-    it("Should Add Liquidity", async function () {
-      const { deployer, token } = await loadFixture(
+    it("Should Deploy", async function () {
+      const { deployer, tokenA, tokenB } = await loadFixture(
         deploy
       );
 
       console.log("Deployer", deployer.address);
 
+      const balanceA = await tokenA.balanceOf(deployer.address);
+      console.log(balanceA);
 
-      const balance = await token.balanceOf(deployer.address);
-      console.log(balance);
-
+      const balanceB = await tokenB.balanceOf(deployer.address);
+      console.log(balanceB);
 
     });
+
+    it("Should Create Pair", async function () {
+      const { deployer, tokenA, tokenB, factory } = await loadFixture(
+        deploy
+      );
+
+      console.log("Deployer", deployer.address);
+
+      const balanceA = await tokenA.balanceOf(deployer.address);
+      console.log(balanceA);
+
+      const balanceB = await tokenA.balanceOf(deployer.address);
+      console.log(balanceB);
+
+      await factory.createPair(await tokenA.getAddress(), await tokenB.getAddress()); 
+
+    });
+
+
 
   });
 });
