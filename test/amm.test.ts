@@ -11,9 +11,6 @@ describe("evm_chess Wager Unit Tests", function () {
     const tokenA = await ERC20_token.deploy();
     const tokenB = await ERC20_token.deploy();
 
-/*     const MATH = await ethers.getContractFactory("SD");
-    const math = await MATH.deploy(); */
-    
     const AMM = await ethers.getContractFactory("SberAMM");
     const amm = await AMM.deploy();
 
