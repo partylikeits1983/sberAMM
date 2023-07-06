@@ -4,12 +4,12 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
 
-import "./libraries/Math.sol";
+// import "./libraries/Math.sol";
 
 /// @title SberAMM 
-/// @notice in development
-contract AMM {
-    using SD for int256;
+/// @notice Sberbank Automated Market Maker 
+contract SberAMM {
+    // using SD for int256;
 	using SafeERC20 for IERC20;
 
 	// @dev struct for pool
@@ -121,19 +121,19 @@ contract AMM {
 		require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
 		address tokenOut = getOtherTokenAddr(PID, tokenIn);
-		int amountOut;
+		uint amountOut;
 
 		if(Pools[PID].token0 == tokenIn) {
 			// amount out Y
 			// Pools[PID].amount0 += amount;
-			amountOut = int(amount).mul(int(Pools[PID].amount1)).div(int(amount + Pools[PID].amount0));
+			amountOut = ud(amount).mul(ud(Pools[PID].amount1)).div((ud(amount) + ud(Pools[PID].amount0))).unwrap();
 			Pools[PID].amount0 += amount;
 
 			Pools[PID].amount1 -= uint(amountOut);
 		} else {
 			// amount out X
 			// Pools[PID].amount1 += amount;
-			amountOut = int(amount).mul(int(Pools[PID].amount0)).div(int(amount + Pools[PID].amount1));
+            amountOut = ud(amount).mul(ud(Pools[PID].amount0)).div((ud(amount) + ud(Pools[PID].amount1))).unwrap();
 			Pools[PID].amount1 += amount;
 
 			Pools[PID].amount0 -= uint(amountOut);
@@ -157,21 +157,21 @@ contract AMM {
 	// TVL = 20x
 
 	// @dev given pool id and token address, return the exchange rate and total value locked
-	function totalValueLocked(uint PID, address token0) public view returns (int rate, int tvl) {
+	function totalValueLocked(uint PID, address token0) public view returns (uint rate, uint tvl) {
 		address poolX = Pools[PID].token0;
 
 		if (token0 == poolX) {
-			int amountX = int(Pools[PID].amount0);
-			int amountY = int(Pools[PID].amount1);
+			uint amountX = Pools[PID].amount0;
+			uint amountY = Pools[PID].amount1;
 
-			rate = amountX.div(amountY);
-			tvl = rate.mul(amountY) + amountX;
+			rate = ud(amountX).div(ud(amountY)).unwrap();
+			tvl = (ud(rate) * (ud(amountY)) + ud(amountX)).unwrap();
 		} else {
-			int amountX = int(Pools[PID].amount1);
-			int amountY = int(Pools[PID].amount0);
+			uint amountX = Pools[PID].amount1;
+			uint amountY = Pools[PID].amount0;
 
-			rate = amountX.div(amountY);
-			tvl = rate.mul(amountY) + amountX;
+			rate = (ud(amountX) / ud(amountY)).unwrap();
+			tvl = (ud(rate).mul(ud(amountY)) + ud(amountX)).unwrap();
 		}
 
 		return (rate, tvl);
@@ -182,15 +182,15 @@ contract AMM {
 		address poolX = Pools[PID].token0;
 
 		if (token0 == poolX) {
-			int amountX = int(Pools[PID].amount0);
-			int amountY = int(Pools[PID].amount1);
+			uint amountX = Pools[PID].amount0;
+			uint amountY = Pools[PID].amount1;
 
-			rate = uint(amountX.div(amountY));
+			rate = (ud(amountX) / ud(amountY)).unwrap();
 		} else {
-			int amountX = int(Pools[PID].amount1);
-			int amountY = int(Pools[PID].amount0);
+			uint amountX = Pools[PID].amount1;
+			uint amountY = Pools[PID].amount0;
 
-			rate = uint(amountX.div(amountY));
+			rate = (ud(amountX) / ud(amountY)).unwrap();
 		}
 		return rate;
 	}
