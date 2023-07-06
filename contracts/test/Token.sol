@@ -8,7 +8,7 @@ contract Token is ERC20 {
     uint constant _initial_supply = 100 * 1e18 * 1e6; // 100 million
 
     string _name = "Token";
-    string _symbol = "TK";
+    string _symbol = "TEST";
 
     constructor() ERC20(_name, _symbol) {
         _mint(msg.sender, _initial_supply);

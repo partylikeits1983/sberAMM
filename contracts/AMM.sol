@@ -165,10 +165,8 @@ contract SberAMM {
 
             Pools[PID].amount0 -= uint(amountOut);
         }
-        // transfer amount token out
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
-        // Handle fee logic
         handleFees(PID, tokenIn, fee);
 
         return uint(amountOut);
@@ -184,16 +182,14 @@ contract SberAMM {
         uint amountMinusFee = amount - fee;
 
         // Calculate the invariant k (square)
-        uint kSquare = (ud(Pools[PID].amount0).pow(ud(2)))
-            .mul((ud(Pools[PID].amount1).pow(ud(2))))
+        uint kSquare = (ud(Pools[PID].amount0).pow(ud(2e18)))
+            .mul((ud(Pools[PID].amount1).pow(ud(2e18))))
             .unwrap();
 
         uint amountOut = calculateAmounts(PID, tokenIn, amountMinusFee, kSquare);
 
-        // transfer amount token out
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
-        // Handle fee logic
         handleFees(PID, tokenIn, fee);
 
         return uint(amountOut);
@@ -213,7 +209,7 @@ contract SberAMM {
             // amount out Y
 
             newX = Pools[PID].amount0 + amountMinusFee;
-            newY = (ud(kSquare) / ud(newX).pow(ud(2))).sqrt().unwrap();
+            newY = (ud(kSquare) / ud(newX).pow(ud(2e18))).sqrt().unwrap();
             amountOut = Pools[PID].amount1 - newY;
 
             Pools[PID].amount0 = newX;
@@ -222,7 +218,7 @@ contract SberAMM {
             // amount out X
 
             newY = Pools[PID].amount1 + amountMinusFee;
-            newX = (ud(kSquare) / ud(newY).pow(ud(2))).sqrt().unwrap();
+            newX = (ud(kSquare) / ud(newY).pow(ud(2e18))).sqrt().unwrap();
 
             amountOut = Pools[PID].amount0 - newX;
 
