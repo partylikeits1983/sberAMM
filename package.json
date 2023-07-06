@@ -2,10 +2,15 @@
   "name": "hardhat-project",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^3.0.0",
-    "hardhat": "^2.16.1"
+    "hardhat": "^2.16.1",
+    "prettier": "^3.0.0"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
     "@prb/math": "^4.0.1"
+  },
+  "scripts": {
+    "prettier:check": "prettier --check \"**/*.sol\"",
+    "prettier:format": "prettier --write \"**/*.sol\""
   }
 }
