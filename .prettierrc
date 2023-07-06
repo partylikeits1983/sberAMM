@@ -5,10 +5,7 @@
   "tabWidth": 2,
   "overrides": [
     {
-      "files": "*.sol",
-      "options": {
-        "parser": "solidity"
-      }
+      "files": "*.sol"
     }
   ]
 }
