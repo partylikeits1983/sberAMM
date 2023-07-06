@@ -124,7 +124,6 @@ describe("evm_chess Wager Unit Tests", function () {
 
       await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("5.0"));
 
-
     });
 
   });

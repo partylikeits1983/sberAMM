@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { UD60x18, ud } from "@prb/math/src/UD60x18.sol";
+
 import "./libraries/Math.sol";
 
-/// @title SimpleAMM 
-/// @notice CFMM Proof of Concept 
-
+/// @title SberAMM 
+/// @notice in development
 contract AMM {
 	using SD for int256;
 	using SafeERC20 for IERC20; 
@@ -48,23 +49,6 @@ contract AMM {
 	}
 
 	// @dev deposit tokens into pool and create liquidity position
-	function deposit(uint PID, uint amount_token0, uint amount_token1) public {
-		address token0 = Pools[PID].token0;
-		address token1 = Pools[PID].token1;
-
-		require(token0 != address(0), "not initialized X");
-		require(token1 != address(0), "not initialized Y");
-
-		IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
-		IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
-
-		Pools[PID].amount0 += amount_token0;
-		Pools[PID].amount1 += amount_token1;
-
-		Positions[msg.sender].amount0 = amount_token0;
-		Positions[msg.sender].amount1 = amount_token1;
-	}
-
 	// @dev withdraw tokens from pool and destroy liquidity position
 	function withdraw() public {
 		// TODO
