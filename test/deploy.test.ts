@@ -10,11 +10,15 @@ describe("evm_chess Wager Unit Tests", function () {
     const ERC20_token = await ethers.getContractFactory("ERC20");
     const token = await ERC20_token.deploy();
 
+    const FACTORY = await ethers.getContractFactory("UniswapV2Factory");
+    const factory = await FACTORY.deploy(deployer.address);
+
     return {
       deployer,
       user0,
       user1,
-      token
+      token,
+      factory
     };
   }
 
