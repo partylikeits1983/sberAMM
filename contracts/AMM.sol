@@ -20,6 +20,9 @@ contract SberAMM {
         uint totalShares;
 	}
 
+    // @dev address token0 => address token1
+    mapping(address => address) public getPair;
+
 	// @dev struct for user liquidity position
 	struct Position {
 		uint amount0;
@@ -30,7 +33,7 @@ contract SberAMM {
 	mapping(uint => Pool) public Pools;
 
 	// @dev array of pool ids
-	uint[] public PIDs;
+	uint public PIDs;
 
 	// @dev user address => Position struct
 	mapping(address => Position) public Positions;
@@ -38,20 +41,30 @@ contract SberAMM {
     // @dev user address => PID => shares
     mapping (address => mapping (uint => uint)) public PoolShares;
 
+    modifier pidExist(uint PID) {
+        require(PID <= PIDs, "PID does not exist");
+        _;
+    }
+
 	// @dev create pool
-	function createPair(address token0, address token1) public returns (uint) {
-		uint PID = PIDs.length;
+	function createPair(address tokenA, address tokenB) external returns (uint) {
+        require(tokenA != tokenB, 'two identical addresses');
+        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
+        require(token0 != address(0), 'Zero Address');
+        require(getPair[token0] != token1, 'Pair already exists'); 
+        
+		uint PID = PIDs;
 
 		Pools[PID].token0 = token0;
 		Pools[PID].token1 = token1;
-
-		PIDs.push(PID);
+        getPair[token0] = token1;
+		PIDs++;
 
 		return PID;
 	}
 
     // @dev deposit tokens into pool and create liquidity position
-    function deposit(uint PID, uint amount_token0, uint amount_token1) public {
+    function deposit(uint PID, uint amount_token0, uint amount_token1) external pidExist(PID) {
         address token0 = Pools[PID].token0;
         address token1 = Pools[PID].token1;
 
@@ -72,7 +85,7 @@ contract SberAMM {
     }
 
     // @dev withdraw tokens from pool and destroy liquidity position
-    function withdraw(uint PID) public returns (uint, uint) {
+    function withdraw(uint PID) external pidExist(PID) returns (uint, uint) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No pool shares to withdraw");
 
@@ -114,7 +127,7 @@ contract SberAMM {
 	// amountOut = (-dx * y) / (dx + x)
 
 	// @dev swap tokens in pool
-    function swap(uint PID, address tokenIn, uint amount) public returns (uint) {
+    function swap(uint PID, address tokenIn, uint amount) external pidExist(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
         
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
@@ -223,7 +236,7 @@ contract SberAMM {
 	// TVL = 20x
 
 	// @dev given pool id and token address, return the exchange rate and total value locked
-	function totalValueLocked(uint PID, address token0) public view returns (uint rate, uint tvl) {
+	function totalValueLocked(uint PID, address token0) external view pidExist(PID) returns (uint rate, uint tvl) {
 		address poolX = Pools[PID].token0;
 
 		if (token0 == poolX) {
@@ -244,7 +257,7 @@ contract SberAMM {
 	}
 
 	// @dev given pool id and token address, return the exchange rate
-	function exchangeRate(uint PID, address token0) public view returns (uint rate) {
+	function exchangeRate(uint PID, address token0) external view pidExist(PID) returns (uint rate) {
 		address poolX = Pools[PID].token0;
 
 		if (token0 == poolX) {
@@ -262,7 +275,7 @@ contract SberAMM {
 	}
 
 	// @dev given a pool id and a token address, return the other token address
-	function getOtherTokenAddr(uint PID, address token0) public view returns (address token1) {
+	function getOtherTokenAddr(uint PID, address token0) public view pidExist(PID) returns (address token1) {
 		address poolX = Pools[PID].token0;
 		address poolY = Pools[PID].token1;
 
@@ -276,7 +289,7 @@ contract SberAMM {
 	}
 
 	// @dev get number of pools in contract
-	function numberOfPools() public view returns (uint) {
-		return PIDs.length;
+	function numberOfPools() external view returns (uint) {
+		return PIDs;
 	}
 }
