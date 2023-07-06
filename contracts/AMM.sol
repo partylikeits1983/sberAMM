@@ -17,6 +17,7 @@ contract SberAMM {
         uint amount1;
         uint totalShares;
         bool isStable;
+        mapping(address => uint) lastWithdrawnFees;
     }
 
     // @dev address token0 => address token1
@@ -228,7 +229,28 @@ contract SberAMM {
         return amountOut;
     }
 
-    // A separate function to handle fees
+    function withdrawFees(uint PID, address token) public {
+        Pool storage pool = Pools[PID];
+        uint totalFee = (token == pool.token0) ? pool.amount0 : pool.amount1;
+
+        uint share = PoolShares[msg.sender][PID];
+        require(share > 0, "No shares found for the user");
+
+        uint fee = (totalFee * share) / pool.totalShares;
+        uint lastWithdrawnFee = pool.lastWithdrawnFees[msg.sender];
+        require(fee > lastWithdrawnFee, "No fees to withdraw");
+
+        uint feeToWithdraw = fee - lastWithdrawnFee;
+        pool.lastWithdrawnFees[msg.sender] = fee;
+
+        // Assuming your contract is an ERC20 type
+        // Transfer the fee to the user
+        IERC20(token).transfer(msg.sender, feeToWithdraw);
+    }
+
+
+
+    // @dev separate function to handle fees
     function handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
