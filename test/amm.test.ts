@@ -134,12 +134,23 @@ describe("evm_chess Wager Unit Tests", function () {
 
       // Swap
       await tokenA.approve(await amm.getAddress(), amountA);
-      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("100"));
+      await amm.swap(0, await tokenA.getAddress(), ethers.parseEther("10000"));
 
       const rate1 = Number(await amm.exchangeRate(0, await tokenA.getAddress()));
       console.log("exchange rate t1", rate1);
 
       console.log("slippage:", (rate1 - rate0) / rate1 * 100, "%");
+
+      // fees accrued
+      const feeAccrued = await amm.viewEarnedFees(0, await tokenA.getAddress())
+
+      let balance_t0 = await tokenA.balanceOf(await deployer.getAddress());
+      await amm.withdrawFees(0, await tokenA.getAddress());
+      let balance_t1 = await tokenA.balanceOf(await deployer.getAddress());
+
+      console.log("fees transfered: ", balance_t1 - balance_t0);
+
+      expect(feeAccrued).to.be.equal(balance_t1 - balance_t0);
 
       // Deposit User0
       const depositAmountA = ethers.parseEther("1000");
@@ -151,7 +162,7 @@ describe("evm_chess Wager Unit Tests", function () {
       // const amount = ethers.parseEther("100000");
       await amm.connect(user0).deposit(0, depositAmountA, depositAmountB);
 
-      console.log("exchange rate t2", await amm.exchangeRate(0, await tokenA.getAddress()));
+      // console.log("exchange rate t2", await amm.exchangeRate(0, await tokenA.getAddress()));
 
       const totalLiquidity0 = await amm.Pools(0);
       // console.log("pools: ", totalLiquidity0);
@@ -159,11 +170,11 @@ describe("evm_chess Wager Unit Tests", function () {
       // withdraw
       await amm.connect(deployer).withdraw(0);
 
-      const totalLiquidity1 = await amm.Pools(0);
+      // const totalLiquidity1 = await amm.Pools(0);
       // console.log("pools: ", totalLiquidity1);
 
       // const rate = await amm.exchangeRate(0, await tokenA.getAddress());
-      console.log("exchange rate", await amm.exchangeRate(0, await tokenA.getAddress()));
+      // console.log("exchange rate", await amm.exchangeRate(0, await tokenA.getAddress()));
     });
     it("Should Execute Stable Swap", async function () {
       const { deployer, user0, user1, tokenA, tokenB, amm } = await loadFixture(
