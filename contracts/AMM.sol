@@ -4,9 +4,11 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {UD60x18, ud} from "@prb/math/src/UD60x18.sol";
 
+import "./Admin.sol";
+
 /// @title SberAMM
 /// @notice Sberbank Automated Market Maker
-contract SberAMM {
+contract SberAMM is Admin {
     using SafeERC20 for IERC20;
 
     // @dev struct for pool
@@ -50,13 +52,22 @@ contract SberAMM {
     // @dev user address => PID => shares
     mapping(address => mapping(uint => uint)) public PoolShares;
 
+
+    constructor (uint _fee, address _dividendPayingERC20) Admin(_fee, _dividendPayingERC20) {}
+
+
     modifier pidExists(uint PID) {
         require(PID <= PIDs, "PID does not exist");
         _;
     }
 
     // @dev create pool
-    function createPair(address tokenA, address tokenB, uint _feeRate, bool _isStable) external returns (uint) {
+    function createPair(
+        address tokenA,
+        address tokenB,
+        uint _feeRate,
+        bool _isStable
+    ) external returns (uint) {
         require(tokenA != tokenB, "two identical addresses");
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), "Zero Address");
@@ -113,9 +124,17 @@ contract SberAMM {
         require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
         require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
 
+        // Calculate the protocol fee
+        uint protocol_fee_token0 = ud(amount_token0).mul(ud(0.01e18)).unwrap();
+        uint protocol_fee_token1 = ud(amount_token1).mul(ud(0.01e18)).unwrap();
+
         // Update the total amount of tokens in the pool
         Pools[PID].amount0 -= amount_token0;
         Pools[PID].amount1 -= amount_token1;
+
+        // Subtract the protocol fee from the amount to be transferred
+        amount_token0 -= protocol_fee_token0;
+        amount_token1 -= protocol_fee_token1;
 
         // Update the total shares of the pool
         Pools[PID].totalShares -= share;
@@ -127,8 +146,13 @@ contract SberAMM {
         IERC20(Pools[PID].token0).safeTransfer(msg.sender, amount_token0);
         IERC20(Pools[PID].token1).safeTransfer(msg.sender, amount_token1);
 
+        // Transfer the protocol fee
+        IERC20(Pools[PID].token0).safeTransfer(dividendPayingERC20, protocol_fee_token0);
+        IERC20(Pools[PID].token1).safeTransfer(dividendPayingERC20, protocol_fee_token1);
+
         return (amount_token0, amount_token1);
     }
+
 
     // @dev swap tokens in pool
     // amountOutY = (-amountInX * y) / (amountInX + x)
@@ -140,7 +164,7 @@ contract SberAMM {
         uint amountOut;
 
         // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
-        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap(); 
+        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
         uint amountMinusFee = amount - fee;
 
         if (Pools[PID].token0 == tokenIn) {
@@ -184,7 +208,7 @@ contract SberAMM {
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
 
         // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
-        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap(); 
+        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
 
         uint amountMinusFee = amount - fee;
 
@@ -249,6 +273,8 @@ contract SberAMM {
             .unwrap();
 
         IERC20(token).safeTransfer(msg.sender, fee);
+
+        return fee;
     }
 
     // @dev separate function to handle fees
