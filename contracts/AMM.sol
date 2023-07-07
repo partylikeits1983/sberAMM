@@ -52,9 +52,7 @@ contract SberAMM is Admin {
     // @dev user address => PID => shares
     mapping(address => mapping(uint => uint)) public PoolShares;
 
-
-    constructor (uint _fee, address _dividendPayingERC20) Admin(_fee, _dividendPayingERC20) {}
-
+    constructor(uint _fee, address _dividendPayingERC20) Admin(_fee, _dividendPayingERC20) {}
 
     modifier pidExists(uint PID) {
         require(PID <= PIDs, "PID does not exist");
@@ -152,7 +150,6 @@ contract SberAMM is Admin {
 
         return (amount_token0, amount_token1);
     }
-
 
     // @dev swap tokens in pool
     // amountOutY = (-amountInX * y) / (amountInX + x)
