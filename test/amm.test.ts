@@ -61,7 +61,9 @@ describe("evm_chess Wager Unit Tests", function () {
       const balanceB = await tokenB.balanceOf(deployer.address);
       console.log(balanceB);
 
-      await amm.createPair(await tokenA.getAddress(), await tokenB.getAddress(), false);
+      const feeRate = ethers.parseEther("0.003");
+
+      await amm.createPair(await tokenA.getAddress(), await tokenB.getAddress(), feeRate, false);
     });
 
     it("Should Add Liquidity to Pair", async function () {
@@ -74,8 +76,10 @@ describe("evm_chess Wager Unit Tests", function () {
 
       const tokenA_address = await tokenA.getAddress();
       const tokenB_address = await tokenB.getAddress();
+      const feeRate = ethers.parseEther("0.003");
 
-      await amm.createPair(tokenA_address, tokenB_address, false);
+
+      await amm.createPair(tokenA_address, tokenB_address, feeRate, false);
 
       let amountA = ethers.parseEther("100.0");
       let amountB = ethers.parseEther("100.0");
@@ -94,8 +98,9 @@ describe("evm_chess Wager Unit Tests", function () {
 
       const tokenA_address = await tokenA.getAddress();
       const tokenB_address = await tokenB.getAddress();
+      const feeRate = ethers.parseEther("0.003");
 
-      await amm.createPair(tokenA_address, tokenB_address, false);
+      await amm.createPair(tokenA_address, tokenB_address, feeRate, false);
 
       let amountA = ethers.parseEther("1000.0");
       let amountB = ethers.parseEther("1000.0");
@@ -118,8 +123,9 @@ describe("evm_chess Wager Unit Tests", function () {
 
       const tokenA_address = await tokenA.getAddress();
       const tokenB_address = await tokenB.getAddress();
+      const feeRate = ethers.parseEther("0.003");
 
-      await amm.createPair(tokenA_address, tokenB_address, false);
+      await amm.createPair(tokenA_address, tokenB_address, feeRate, false);
 
       let amountA = ethers.parseEther("1000000.0");
       let amountB = ethers.parseEther("1000000.0");
@@ -183,8 +189,9 @@ describe("evm_chess Wager Unit Tests", function () {
 
       const tokenA_address = await tokenA.getAddress();
       const tokenB_address = await tokenB.getAddress();
+      const feeRate = ethers.parseEther("0.003");
 
-      await amm.createPair(tokenA_address, tokenB_address, true);
+      await amm.createPair(tokenA_address, tokenB_address, feeRate, true);
 
       let amountA = ethers.parseEther("1000000.0");
       let amountB = ethers.parseEther("1000000.0");

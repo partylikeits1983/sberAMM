@@ -19,24 +19,21 @@ contract SberAMM {
         bool isStable;
         uint fee0;
         uint fee1;
+        uint feeRate;
     }
-
-    struct Fee {
-        uint fee0;
-        uint fee1;
-    }
-
-    // PID => address user => Fee
-    mapping(uint => mapping(address => Fee)) Fees;
-
-    // @dev address token0 => address token1
-    mapping(address => address) public getPair;
-
     // @dev struct for user liquidity position
     struct Position {
         uint amount0;
         uint amount1;
     }
+    // @dev keeping track of historical fees withdrawn by user
+    struct Fee {
+        uint fee0;
+        uint fee1;
+    }
+
+    // @dev address token0 => address token1
+    mapping(address => address) public getPair;
 
     // @dev pool id => Pool struct
     mapping(uint => Pool) public Pools;
@@ -47,6 +44,9 @@ contract SberAMM {
     // @dev user address => Position struct
     mapping(address => Position) public Positions;
 
+    // PID => address user => Fee
+    mapping(uint => mapping(address => Fee)) Fees;
+
     // @dev user address => PID => shares
     mapping(address => mapping(uint => uint)) public PoolShares;
 
@@ -56,7 +56,7 @@ contract SberAMM {
     }
 
     // @dev create pool
-    function createPair(address tokenA, address tokenB, bool _isStable) external returns (uint) {
+    function createPair(address tokenA, address tokenB, uint _feeRate, bool _isStable) external returns (uint) {
         require(tokenA != tokenB, "two identical addresses");
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
         require(token0 != address(0), "Zero Address");
@@ -66,6 +66,7 @@ contract SberAMM {
 
         Pools[PID].token0 = token0;
         Pools[PID].token1 = token1;
+        Pools[PID].feeRate = _feeRate;
         Pools[PID].isStable = _isStable;
 
         getPair[token0] = token1;
@@ -129,21 +130,8 @@ contract SberAMM {
         return (amount_token0, amount_token1);
     }
 
-    // @dev hypothetical swap:
-    // x = 5
-    // y = 10
-    // k = x*y
-    // dx = 1
-    // k = (x+1) * (y+dy)
-    // 50 = (5+1) * (10+dy)
-    // 50 = 6 * (10 + dy)
-    // 50 = 60+6dy
-    // -10 = 6dy
-    // -10/6 = dy
-    // -1.666
-    // amountOut = (-dx * y) / (dx + x)
-
     // @dev swap tokens in pool
+    // amountOutY = (-amountInX * y) / (amountInX + x)
     function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
         require(Pools[PID].isStable == false, "not x * y = k");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
@@ -151,7 +139,8 @@ contract SberAMM {
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
         uint amountOut;
 
-        uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap(); 
         uint amountMinusFee = amount - fee;
 
         if (Pools[PID].token0 == tokenIn) {
@@ -182,18 +171,24 @@ contract SberAMM {
         return uint(amountOut);
     }
 
-    // @dev uses the function: log(amountOutY) = log(-amountInX * y / (amountInX + x))
-    function swapStable(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
+    // @dev swap tokens in pool using modified xy=k formula
+    // @dev uses the function: amountOutY = log(-amountInX * y / (amountInX + x))
+    function swapStable(
+        uint PID,
+        address tokenIn,
+        uint amount
+    ) external pidExists(PID) returns (uint) {
         require(Pools[PID].isStable == true, "not x^2 * y^2 = k^2");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = getOtherTokenAddr(PID, tokenIn);
-        uint amountOut;
 
-        uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
+        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap(); 
+
         uint amountMinusFee = amount - fee;
 
-        calculateAmounts(PID, tokenIn, amountMinusFee);
+        uint amountOut = calculateAmounts(PID, tokenIn, amountMinusFee);
 
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
@@ -212,7 +207,11 @@ contract SberAMM {
         if (Pools[PID].token0 == tokenIn) {
             // amount out Y
             // log(amountOutY) = log(-amountInX * y / (amountInX + x))
-            amountOut = ud(amountMinusFee).mul(ud(Pools[PID].amount1)).div((ud(amountMinusFee) + ud(Pools[PID].amount0))).log2().unwrap();
+            amountOut = ud(amountMinusFee)
+                .mul(ud(Pools[PID].amount1))
+                .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
+                .log2()
+                .unwrap();
             // amountOut = ud(amountOut).exp().unwrap();
             Pools[PID].amount0 += amountMinusFee;
 
@@ -220,7 +219,11 @@ contract SberAMM {
         } else {
             // amount out X
             // log(amountOutY) = log(-amountInX * y / (amountInX + x))
-            amountOut = ud(amountMinusFee).mul(ud(Pools[PID].amount0)).div((ud(amountMinusFee) + ud(Pools[PID].amount1))).log2().unwrap();
+            amountOut = ud(amountMinusFee)
+                .mul(ud(Pools[PID].amount0))
+                .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
+                .log2()
+                .unwrap();
             // amountOut = ud(amountOut).exp().unwrap();
             Pools[PID].amount1 += amountMinusFee;
 
@@ -229,9 +232,7 @@ contract SberAMM {
         return amountOut;
     }
 
-
-
-   function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
+    function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];
         uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1;
 
