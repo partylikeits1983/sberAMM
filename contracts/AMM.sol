@@ -67,10 +67,12 @@ contract SberAMM is Admin {
         bool _isStable
     ) external returns (uint) {
         require(tokenA != tokenB, "two identical addresses");
+        require(tokenA != address(0), "Zero Address tokenA");
+        require(tokenB != address(0), "Zero Address tokenB");
         (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), "Zero Address");
         require(getPair[token0] != token1, "Pair already exists");
 
+        PIDs++;
         uint PID = PIDs;
 
         Pools[PID].token0 = token0;
@@ -79,7 +81,6 @@ contract SberAMM is Admin {
         Pools[PID].isStable = _isStable;
 
         getPair[token0] = token1;
-        PIDs++;
 
         return PID;
     }
@@ -88,9 +89,6 @@ contract SberAMM is Admin {
     function deposit(uint PID, uint amount_token0, uint amount_token1) external pidExists(PID) {
         address token0 = Pools[PID].token0;
         address token1 = Pools[PID].token1;
-
-        require(token0 != address(0), "not initialized X");
-        require(token1 != address(0), "not initialized Y");
 
         IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
         IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
@@ -157,7 +155,7 @@ contract SberAMM is Admin {
         require(Pools[PID].isStable == false, "not x * y = k");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
-        address tokenOut = getOtherTokenAddr(PID, tokenIn);
+        address tokenOut = _getOtherTokenAddr(PID, tokenIn);
         uint amountOut;
 
         // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
@@ -202,7 +200,7 @@ contract SberAMM is Admin {
         require(Pools[PID].isStable == true, "not x^2 * y^2 = k^2");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
-        address tokenOut = getOtherTokenAddr(PID, tokenIn);
+        address tokenOut = _getOtherTokenAddr(PID, tokenIn);
 
         // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
         uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
@@ -362,10 +360,10 @@ contract SberAMM is Admin {
     }
 
     // @dev given a pool id and a token address, return the other token address
-    function getOtherTokenAddr(
+    function _getOtherTokenAddr(
         uint PID,
         address token0
-    ) internal view pidExists(PID) returns (address token1) {
+    ) internal view returns (address token1) {
         address poolX = Pools[PID].token0;
         address poolY = Pools[PID].token1;
 
