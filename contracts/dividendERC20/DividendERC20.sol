@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract ChessFishToken is ERC20 {
+contract DividendToken is ERC20 {
     // Mint 1 000 000 CFSH tokens
     uint constant _initial_supply = 1e18 * 1e6;
 

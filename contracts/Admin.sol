@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 
 contract Admin {
     // Sberbank admin functions:
-    address deployer;
+    address admin;
 
     // require isPaused == false
     bool isPaused;
@@ -16,15 +16,19 @@ contract Admin {
     address public dividendPayingERC20;
 
     constructor(uint _fee, address _dividendPayingERC20) {
-        deployer = msg.sender;
+        admin = msg.sender;
         AMMFee = _fee;
         isPaused = false;
 
         dividendPayingERC20 = _dividendPayingERC20;
     }
 
-    modifier onlyDeployer() {
-        require(msg.sender == deployer, "not deployer");
+    modifier onlyAdmin() {
+        require(msg.sender == admin, "not deployer");
         _;
+    }
+
+    function setIsPaused(bool _isPaused) onlyAdmin external {
+        isPaused = _isPaused;
     }
 }

@@ -12,8 +12,15 @@ describe("evm_chess Wager Unit Tests", function () {
     const tokenA = await ERC20_token.deploy();
     const tokenB = await ERC20_token.deploy();
 
+    const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
+    const dividendToken = await DIVIDEND_TOKEN.deploy();
+
+    const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
+    const splitter = await PAYMENT_SPLITTER.deploy(await dividendToken.getAddress());
+
+    const protocolFee = ethers.parseEther("0.01");
     const AMM = await ethers.getContractFactory("SberAMM");
-    const amm = await AMM.deploy();
+    const amm = await AMM.deploy(protocolFee, await splitter.getAddress());
 
     // send erc20 tokens to user1
     await tokenA.connect(deployer).transfer(user0.address, ethers.parseEther("100000"));

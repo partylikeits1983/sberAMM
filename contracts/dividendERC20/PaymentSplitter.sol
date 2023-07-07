@@ -29,11 +29,7 @@ import "@openzeppelin/contracts/utils/Context.sol";
 contract PaymentSplitter {
     event PayeeAdded(address account, uint256 shares);
     event PaymentReleased(address to, uint256 amount);
-    event ERC20PaymentReleased(
-        IERC20 indexed token,
-        address to,
-        uint256 amount
-    );
+    event ERC20PaymentReleased(IERC20 indexed token, address to, uint256 amount);
     event PaymentReceived(address from, uint256 amount);
 
     uint256 private _totalReleased;
@@ -54,9 +50,7 @@ contract PaymentSplitter {
      * duplicates in `payees`.
      */
 
-    constructor(
-        address _token
-    ) {
+    constructor(address _token) {
         SDIV_token = _token;
     }
 
@@ -113,10 +107,7 @@ contract PaymentSplitter {
      * @dev Getter for the amount of `token` tokens already released to a payee. `token` should be the address of an
      * IERC20 contract.
      */
-    function releasedERC20(
-        IERC20 token,
-        address account
-    ) public view returns (uint256) {
+    function releasedERC20(IERC20 token, address account) public view returns (uint256) {
         return _erc20Released[token][account];
     }
 
@@ -132,18 +123,9 @@ contract PaymentSplitter {
      * @dev Getter for the amount of payee's releasable `token` tokens. `token` should be the address of an
      * IERC20 contract.
      */
-    function releasableERC20(
-        IERC20 token,
-        address account
-    ) public view returns (uint256) {
-        uint256 totalReceived = token.balanceOf(address(this)) +
-            totalReleasedERC20(token);
-        return
-            _pendingPayment(
-                account,
-                totalReceived,
-                releasedERC20(token, account)
-            );
+    function releasableERC20(IERC20 token, address account) public view returns (uint256) {
+        uint256 totalReceived = token.balanceOf(address(this)) + totalReleasedERC20(token);
+        return _pendingPayment(account, totalReceived, releasedERC20(token, account));
     }
 
     /**
