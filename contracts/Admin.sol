@@ -28,7 +28,7 @@ contract Admin {
         _;
     }
 
-    function setIsPaused(bool _isPaused) onlyAdmin external {
+    function setIsPaused(bool _isPaused) external onlyAdmin {
         isPaused = _isPaused;
     }
 }
