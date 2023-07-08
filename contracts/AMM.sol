@@ -156,35 +156,11 @@ contract SberAMM is Admin {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
-        uint amountOut;
-
-        // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
         uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
         uint amountMinusFee = amount - fee;
+        uint amountOut = _calculateAmounts(PID, tokenIn, amountMinusFee);
 
-        if (Pools[PID].token0 == tokenIn) {
-            // amount out Y
-            // Pools[PID].amount0 += amount;
-            amountOut = ud(amountMinusFee)
-                .mul(ud(Pools[PID].amount1))
-                .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
-                .unwrap();
-            Pools[PID].amount0 += amountMinusFee;
-
-            Pools[PID].amount1 -= uint(amountOut);
-        } else {
-            // amount out X
-            // Pools[PID].amount1 += amount;
-            amountOut = ud(amountMinusFee)
-                .mul(ud(Pools[PID].amount0))
-                .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
-                .unwrap();
-            Pools[PID].amount1 += amountMinusFee;
-
-            Pools[PID].amount0 -= uint(amountOut);
-        }
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
-
         handleFees(PID, tokenIn, fee);
 
         return uint(amountOut);
@@ -201,52 +177,57 @@ contract SberAMM is Admin {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
-
-        // uint fee = (ud(0.003e18) * ud(amount)).unwrap();
         uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
-
         uint amountMinusFee = amount - fee;
-
-        uint amountOut = calculateAmounts(PID, tokenIn, amountMinusFee);
+        uint amountOut = _calculateAmounts(PID, tokenIn, amountMinusFee);
 
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
-
         handleFees(PID, tokenIn, fee);
 
         return uint(amountOut);
     }
 
-    function calculateAmounts(
+    function _calculateAmounts(
         uint PID,
         address tokenIn,
         uint amountMinusFee
     ) internal returns (uint) {
         uint amountOut;
 
-        if (Pools[PID].token0 == tokenIn) {
-            // amount out Y
-            // log(amountOutY) = log(-amountInX * y / (amountInX + x))
-            amountOut = ud(amountMinusFee)
-                .mul(ud(Pools[PID].amount1))
-                .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
-                .log2()
-                .unwrap();
-            // amountOut = ud(amountOut).exp().unwrap();
-            Pools[PID].amount0 += amountMinusFee;
-
-            Pools[PID].amount1 -= uint(amountOut);
+        if (Pools[PID].isStable) {
+            if (Pools[PID].token0 == tokenIn) {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount1))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
+                    .log2()
+                    .unwrap();
+                Pools[PID].amount0 += amountMinusFee;
+                Pools[PID].amount1 -= uint(amountOut);
+            } else {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount0))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
+                    .log2()
+                    .unwrap();
+                Pools[PID].amount1 += amountMinusFee;
+                Pools[PID].amount0 -= uint(amountOut);
+            }
         } else {
-            // amount out X
-            // log(amountOutY) = log(-amountInX * y / (amountInX + x))
-            amountOut = ud(amountMinusFee)
-                .mul(ud(Pools[PID].amount0))
-                .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
-                .log2()
-                .unwrap();
-            // amountOut = ud(amountOut).exp().unwrap();
-            Pools[PID].amount1 += amountMinusFee;
-
-            Pools[PID].amount0 -= uint(amountOut);
+            if (Pools[PID].token0 == tokenIn) {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount1))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
+                    .unwrap();
+                Pools[PID].amount0 += amountMinusFee;
+                Pools[PID].amount1 -= uint(amountOut);
+            } else {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount0))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
+                    .unwrap();
+                Pools[PID].amount1 += amountMinusFee;
+                Pools[PID].amount0 -= uint(amountOut);
+            }
         }
         return amountOut;
     }
@@ -299,24 +280,24 @@ contract SberAMM is Admin {
     function totalValueLocked(
         uint PID,
         address token0
-    ) external view pidExists(PID) returns (uint rate, uint tvl) {
+    ) external view pidExists(PID) returns (uint tvl) {
         address poolX = Pools[PID].token0;
 
         if (token0 == poolX) {
             uint amountX = Pools[PID].amount0;
             uint amountY = Pools[PID].amount1;
 
-            rate = ud(amountX).div(ud(amountY)).unwrap();
+            uint rate = ud(amountX).div(ud(amountY)).unwrap();
             tvl = (ud(rate) * (ud(amountY)) + ud(amountX)).unwrap();
         } else {
             uint amountX = Pools[PID].amount1;
             uint amountY = Pools[PID].amount0;
 
-            rate = (ud(amountX) / ud(amountY)).unwrap();
+            uint rate = ud(amountX).div(ud(amountY)).unwrap();
             tvl = (ud(rate).mul(ud(amountY)) + ud(amountX)).unwrap();
         }
 
-        return (rate, tvl);
+        return tvl;
     }
 
     function viewEarnedFees(uint PID, address token) external view pidExists(PID) returns (uint) {
@@ -349,21 +330,18 @@ contract SberAMM is Admin {
             uint amountX = Pools[PID].amount0;
             uint amountY = Pools[PID].amount1;
 
-            rate = (ud(amountX) / ud(amountY)).unwrap();
+            rate = ud(amountX).div(ud(amountY)).unwrap();
         } else {
             uint amountX = Pools[PID].amount1;
             uint amountY = Pools[PID].amount0;
 
-            rate = (ud(amountX) / ud(amountY)).unwrap();
+            rate = ud(amountX).div(ud(amountY)).unwrap();
         }
         return rate;
     }
 
     // @dev given a pool id and a token address, return the other token address
-    function _getOtherTokenAddr(
-        uint PID,
-        address token0
-    ) internal view returns (address token1) {
+    function _getOtherTokenAddr(uint PID, address token0) internal view returns (address token1) {
         address poolX = Pools[PID].token0;
         address poolY = Pools[PID].token1;
 
