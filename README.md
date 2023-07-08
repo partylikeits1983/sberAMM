@@ -67,5 +67,8 @@ amountOut = (-dx * y) / (dx + x)
 ### Deploying 
 npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
 
+#### Deploying on Siberium (currently not working)
+npx hardhat run scripts/deploy.ts --network siberium
+
 ### Verifying 
 npx hardhat verify --network polygon-mumbai 0x563BA4ecBa9C55B1400E6BFDfCB5f299f4CE7BF7

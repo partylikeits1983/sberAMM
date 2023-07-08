@@ -24,7 +24,7 @@ const chainIds = {
   "polygon-mainnet": 137,
   "polygon-mumbai": 80001,
   sepolia: 11155111,
-  chiado: 10200,
+  "siberium": 111000,
   celoTest: 44787,
 };
 
@@ -41,8 +41,8 @@ function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
     case "polygon-mumbai":
       jsonRpcUrl = "https://polygon-mumbai.gateway.tenderly.co";
       break;
-    case "chiado":
-      jsonRpcUrl = "https://rpc.chiado.gnosis.gateway.fm";
+    case "siberium":
+      jsonRpcUrl = "https://rpc.test.siberium.net";
       break;
     case "celoTest":
       jsonRpcUrl = "https://alfajores-forno.celo-testnet.org";
@@ -78,7 +78,7 @@ const config: HardhatUserConfig = {
     "polygon-mainnet": getChainConfig("polygon-mainnet"),
     "polygon-mumbai": getChainConfig("polygon-mumbai"),
     sepolia: getChainConfig("sepolia"),
-    chiado: getChainConfig("chiado"),
+    siberium: getChainConfig("siberium"),
     celoTest: getChainConfig("celoTest"),
   },
   paths: {
