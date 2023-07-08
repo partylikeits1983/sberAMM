@@ -27,24 +27,21 @@ async function deploy(): Promise<void> {
   await tokenB.deployed();
   console.log("tokenB deployed");
 
-
   const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
   const dividendToken = await DIVIDEND_TOKEN.deploy();
   await dividendToken.deployed();
   console.log("dividendToken deployed");
-
 
   const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
   const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
   await splitter.deployed();
   console.log("splitter deployed");
  
-
-  const protocolFee = ethers.utils.parseEther("0.01");
   const AMM = await ethers.getContractFactory("SberAMM");
   const amm = await AMM.deploy();
   await amm.deployed();
 
+  // const protocolFee = ethers.utils.parseEther("0.01");
   // await amm.modifyFeeAmount(protocolFee);
   // await amm.modifySplitterAddress(splitter.address);
   console.log("amm deployed");

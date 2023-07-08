@@ -43,9 +43,6 @@ contract SberAMM is Admin {
     // @dev array of pool ids
     uint public PIDs;
 
-    // @dev user address => Position struct
-    mapping(address => Position) public Positions;
-
     // PID => address user => Fee
     mapping(uint => mapping(address => Fee)) Fees;
 
@@ -95,9 +92,8 @@ contract SberAMM is Admin {
         IERC20(token0).safeTransferFrom(msg.sender, address(this), amount_token0);
         IERC20(token1).safeTransferFrom(msg.sender, address(this), amount_token1);
 
-        UD60x18 liquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt();
+        uint totalLiquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt().unwrap();
 
-        uint totalLiquidity = liquidity.unwrap();
         PoolShares[msg.sender][PID] += totalLiquidity;
         Pools[PID].totalShares += totalLiquidity;
 
