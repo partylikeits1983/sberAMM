@@ -184,7 +184,7 @@ describe("SberAMM Unit Tests", () => {
         console.log("exchange rate t0", rate0);
 
         // Swap
-        await SberAMM.swapStable(secondPID, TokenA.address, swapAmount);
+        await SberAMM.swap(secondPID, TokenA.address, swapAmount);
 
         const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
         console.log("exchange rate t1", rate1);
@@ -216,13 +216,13 @@ describe("SberAMM Unit Tests", () => {
 
         await expect(SberAMM.swap(4, TokenA.address, swapAmount)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.swap(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("Address: call to non-contract");
-        await expect(SberAMM.swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("not x * y = k");
+        // await expect(SberAMM.swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("not x * y = k");
         await expect(SberAMM.connect(user1).swap(firstPID, TokenB.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
 
-        await expect(SberAMM.swapStable(4, TokenA.address, swapAmount)).to.be.revertedWith("PID does not exist");
-        await expect(SberAMM.swapStable(secondPID, TokenB.address, swapAmount)).to.be.revertedWith("Address: call to non-contract");
-        await expect(SberAMM.swapStable(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("not x^2 * y^2 = k^2");
-        await expect(SberAMM.connect(user1).swapStable(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
+        await expect(SberAMM.swap(4, TokenA.address, swapAmount)).to.be.revertedWith("PID does not exist");
+        await expect(SberAMM.swap(secondPID, TokenB.address, swapAmount)).to.be.revertedWith("Address: call to non-contract");
+        // await expect(SberAMM.swap(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("not x^2 * y^2 = k^2");
+        await expect(SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
 
         await expect(SberAMM.withdrawFees(4, TokenA.address)).to.be.revertedWith("PID does not exist");
         // await expect(SberAMM.withdrawFees(secondPID, TokenA.address)).to.be.revertedWith("No shares found for the user");

@@ -151,29 +151,11 @@ contract SberAMM is Admin {
 
     // @dev swap tokens in pool
     // amountOutY = (-amountInX * y) / (amountInX + x)
-    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
-        require(Pools[PID].isStable == false, "not x * y = k");
-        require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
-
-        address tokenOut = _getOtherTokenAddr(PID, tokenIn);
-        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
-        uint amountMinusFee = amount - fee;
-        uint amountOut = _calculateAmounts(PID, tokenIn, amountMinusFee);
-
-        IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
-        handleFees(PID, tokenIn, fee);
-
-        return uint(amountOut);
-    }
 
     // @dev swap tokens in pool using modified xy=k formula
     // @dev uses the function: amountOutY = log(-amountInX * y / (amountInX + x))
-    function swapStable(
-        uint PID,
-        address tokenIn,
-        uint amount
-    ) external pidExists(PID) returns (uint) {
-        require(Pools[PID].isStable == true, "not x^2 * y^2 = k^2");
+ 
+    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
@@ -187,7 +169,7 @@ contract SberAMM is Admin {
         return uint(amountOut);
     }
 
-    function _calculateAmounts(
+   function _calculateAmounts(
         uint PID,
         address tokenIn,
         uint amountMinusFee
