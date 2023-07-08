@@ -43,7 +43,11 @@ describe("SberAMM Unit Tests", () => {
         const tokenD = await ERC20_token.deploy();
         const dividendToken = await DIVIDEND_TOKEN.deploy();
         const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
-        const amm = await AMM.deploy(protocolFee, splitter.address);
+        const amm = await AMM.deploy();
+
+        await amm.modifyFeeAmount(protocolFee);
+        await amm.modifySplitterAddress(splitter.address);
+
         expect(tokenA.address).to.not.eq(ethers.constants.AddressZero);
         expect(tokenB.address).to.not.eq(ethers.constants.AddressZero);
         expect(tokenC.address).to.not.eq(ethers.constants.AddressZero);

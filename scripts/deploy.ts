@@ -9,6 +9,7 @@ interface ContractAddresses {
   testTokenA: string;
   testTokenB: string;
   dividendToken: string;
+  splitter: string;
   AMM: string;
 }
 
@@ -20,22 +21,33 @@ async function deploy(): Promise<void> {
   const ERC20_token = await ethers.getContractFactory("Token");
   const tokenA = await ERC20_token.deploy();
   await tokenA.deployed();
+  console.log("tokenA deployed");
 
   const tokenB = await ERC20_token.deploy();
   await tokenB.deployed();
+  console.log("tokenB deployed");
+
 
   const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
   const dividendToken = await DIVIDEND_TOKEN.deploy();
   await dividendToken.deployed();
+  console.log("dividendToken deployed");
+
 
   const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
   const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
   await splitter.deployed();
+  console.log("splitter deployed");
+ 
 
   const protocolFee = ethers.utils.parseEther("0.01");
   const AMM = await ethers.getContractFactory("SberAMM");
-  const amm = await AMM.deploy(protocolFee, splitter.address);
+  const amm = await AMM.deploy();
   await amm.deployed();
+
+  // await amm.modifyFeeAmount(protocolFee);
+  // await amm.modifySplitterAddress(splitter.address);
+  console.log("amm deployed");
 
   const chainId = Number(network.chainId);
   const networkName = network.name;
@@ -46,6 +58,7 @@ async function deploy(): Promise<void> {
     testTokenA: tokenA.address,
     testTokenB: tokenB.address,
     dividendToken: dividendToken.address,
+    splitter: splitter.address,
     AMM: amm.address,
   };
 
@@ -79,6 +92,7 @@ async function deploy(): Promise<void> {
   console.log("Test tokenA address", contractAddresses.testTokenA);
   console.log("Test tokenB address", contractAddresses.testTokenB);
   console.log("Dividend Token Address ", contractAddresses.dividendToken);
+  console.log("Splitter Token Address ", contractAddresses.splitter);
   console.log("AMM contract address", contractAddresses.AMM);
 
 }

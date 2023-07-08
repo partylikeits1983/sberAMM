@@ -61,3 +61,11 @@ amountOut = (-dx * y) / (dx + x)
 <p align="center">
    <img src="./doc/curve.png">
 </p>
+
+
+
+### Deploying 
+npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
+
+### Verifying 
+npx hardhat verify --network polygon-mumbai 0x563BA4ecBa9C55B1400E6BFDfCB5f299f4CE7BF7

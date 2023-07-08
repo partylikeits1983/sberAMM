@@ -52,7 +52,9 @@ contract SberAMM is Admin {
     // @dev user address => PID => shares
     mapping(address => mapping(uint => uint)) public PoolShares;
 
-    constructor(uint _fee, address _dividendPayingERC20) Admin(_fee, _dividendPayingERC20) {}
+    constructor() {
+        admin = msg.sender;
+    }
 
     modifier pidExists(uint PID) {
         require(PID <= PIDs, "PID does not exist");

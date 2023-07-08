@@ -15,14 +15,6 @@ contract Admin {
     // dividend paying erc20 token
     address public dividendPayingERC20;
 
-    constructor(uint _fee, address _dividendPayingERC20) {
-        admin = msg.sender;
-        AMMFee = _fee;
-        isPaused = false;
-
-        dividendPayingERC20 = _dividendPayingERC20;
-    }
-
     modifier onlyAdmin() {
         require(msg.sender == admin, "not deployer");
         _;
@@ -31,4 +23,13 @@ contract Admin {
     function setIsPaused(bool _isPaused) external onlyAdmin {
         isPaused = _isPaused;
     }
+
+    function modifyFeeAmount(uint _fee) external onlyAdmin {
+        AMMFee = _fee;
+    }
+
+    function modifySplitterAddress(address _dividendPayingERC20) external onlyAdmin {
+        dividendPayingERC20 = _dividendPayingERC20;
+    }
+
 }
