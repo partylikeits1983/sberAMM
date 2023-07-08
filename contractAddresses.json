@@ -1,11 +1,20 @@
 [
   {
-    "network": "hardhat",
+    "network": "unknown",
     "chainID": 31337,
-    "owner": "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    "testTokenA": "0x5FbDB2315678afecb367f032d93F642f64180aa3",
-    "testTokenB": "0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512",
-    "dividendToken": "0x9fE46736679d2D9a65F0992F2272dE9f3c7fa6e0",
-    "AMM": "0xDc64a140Aa3E981100a9becA4E685f962f0cF6C9"
+    "owner": "0x04E7aD617B38D9FCd9A65C8A1b30255350faC8C6",
+    "testTokenA": "0xdf1724f11b65d6a6155B057F33fBDfB2F3B95E17",
+    "testTokenB": "0x0eAD3040254F3aC340F3490DEDc8a6159365E39E",
+    "dividendToken": "0x029C1A99D6ae043FbE0D8BF021135D67c3443642",
+    "AMM": "0xECd78C20F29B29199ed5e6dB101A3816d39F963e"
+  },
+  {
+    "network": "maticmum",
+    "chainID": 80001,
+    "owner": "0x04E7aD617B38D9FCd9A65C8A1b30255350faC8C6",
+    "testTokenA": "0x224Ec8DcD916b981b58c74C925C0E23fE82FC223",
+    "testTokenB": "0x5a2602A0939B452b9cEE65b1fF5511a2e78f63fD",
+    "dividendToken": "0x125296da2925c76c64c63901265371469904E8cC",
+    "AMM": "0xF186fb5416c66d18F0aA33A021A38C47A3C6a89d"
   }
 ]

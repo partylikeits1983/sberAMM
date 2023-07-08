@@ -8,7 +8,8 @@
   },
   "dependencies": {
     "@openzeppelin/contracts": "^4.9.2",
-    "@prb/math": "^4.0.1"
+    "@prb/math": "^4.0.1",
+    "dotenv": "^16.3.1"
   },
   "scripts": {
     "prettier:check": "prettier --check \"**/*.sol\"",

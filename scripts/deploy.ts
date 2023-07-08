@@ -13,23 +13,29 @@ interface ContractAddresses {
 }
 
 async function deploy(): Promise<void> {
-const network = await ethers.provider.getNetwork();
+  const network = await ethers.provider.getNetwork();
 
   const [owner, otherAccount] = await ethers.getSigners();
 
   const ERC20_token = await ethers.getContractFactory("Token");
   const tokenA = await ERC20_token.deploy();
+  await tokenA.deployed();
+
   const tokenB = await ERC20_token.deploy();
+  await tokenB.deployed();
 
   const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
   const dividendToken = await DIVIDEND_TOKEN.deploy();
+  await dividendToken.deployed();
 
   const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
-  const splitter = await PAYMENT_SPLITTER.deploy(await dividendToken.getAddress());
+  const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
+  await splitter.deployed();
 
-  const protocolFee = ethers.parseEther("0.01");
+  const protocolFee = ethers.utils.parseEther("0.01");
   const AMM = await ethers.getContractFactory("SberAMM");
-  const amm = await AMM.deploy(protocolFee, await splitter.getAddress());
+  const amm = await AMM.deploy(protocolFee, splitter.address);
+  await amm.deployed();
 
   const chainId = Number(network.chainId);
   const networkName = network.name;
@@ -37,10 +43,10 @@ const network = await ethers.provider.getNetwork();
     network: networkName,
     chainID: chainId,
     owner: owner.address,
-    testTokenA: await tokenA.getAddress(),
-    testTokenB: await tokenB.getAddress(),
-    dividendToken: await dividendToken.getAddress(),
-    AMM: await amm.getAddress(),
+    testTokenA: tokenA.address,
+    testTokenB: tokenB.address,
+    dividendToken: dividendToken.address,
+    AMM: amm.address,
   };
 
   let existingAddresses: ContractAddresses[] = [];
