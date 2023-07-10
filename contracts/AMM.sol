@@ -34,8 +34,8 @@ contract SberAMM is Admin {
         uint fee1;
     }
 
-    // @dev address token0 => address token1
-    mapping(address => address) public getPair;
+    // @dev address token0 => address token1 => fee uint => PID
+    mapping(address => mapping(address => mapping(uint => uint))) public getPool;
 
     // @dev pool id => Pool struct
     mapping(uint => Pool) public Pools;
@@ -60,26 +60,26 @@ contract SberAMM is Admin {
 
     // @dev create pool
     function createPair(
-        address tokenA,
-        address tokenB,
-        uint _feeRate,
+        address token0,
+        address token1,
+        uint _fee,
         bool _isStable
     ) external returns (uint) {
-        require(tokenA != tokenB, "two identical addresses");
-        require(tokenA != address(0), "Zero Address tokenA");
-        require(tokenB != address(0), "Zero Address tokenB");
-        (address token0, address token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(getPair[token0] != token1, "Pair already exists");
+        require(token0 != token1, "two identical addresses");
+        require(token0 != address(0), "Zero Address tokenA");
+        require(token1 != address(0), "Zero Address tokenB");
+        require(getPool[token0][token1][_fee] == 0, "Pair already exists");
 
         PIDs++;
         uint PID = PIDs;
 
         Pools[PID].token0 = token0;
         Pools[PID].token1 = token1;
-        Pools[PID].feeRate = _feeRate;
+        Pools[PID].feeRate = _fee;
         Pools[PID].isStable = _isStable;
 
-        getPair[token0] = token1;
+        getPool[token0][token1][_fee] = PIDs;
+        getPool[token1][token0][_fee] = PIDs;
 
         return PID;
     }
