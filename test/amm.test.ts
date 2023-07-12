@@ -20,9 +20,9 @@ describe("SberAMM Unit Tests", () => {
     let thirdPID: any;
     const feeRate = ethers.utils.parseEther("0.003");
     const swapAmount = ethers.utils.parseEther("100");
-    const smallAmount = ethers.utils.parseEther("1000");
-    const mediumAmount = ethers.utils.parseEther("10000");
-    const bigAmount = ethers.utils.parseEther("100000");
+    const smallAmount = ethers.utils.parseEther("10000");
+    const mediumAmount = ethers.utils.parseEther("100000");
+    const bigAmount = ethers.utils.parseEther("1000000");
     before(async () => {
         signers = await ethers.getSigners();
         deployer = signers[0];
@@ -206,6 +206,43 @@ describe("SberAMM Unit Tests", () => {
 
         expect(feeAccrued).to.be.equal(feesTransfered);
     });
+    it("Should Check math of dividend token", async () => {
+       // let balanceA_t0 = await TokenA.balanceOf(deployer.address);
+       let balanceC_t0 = await TokenC.balanceOf(deployer.address);
+
+       let amountA = ethers.utils.parseEther("100");
+       let exchangeRate = Number(ethers.utils.formatEther(await SberAMM.exchangeRate(2, TokenA.address)));
+       let expectedOut = Number(amountA) * exchangeRate / 1e18;
+
+       console.log("Expected out: ", Number(expectedOut).toFixed(2));
+
+        // amountOutY = log(-amountInX * y / (amountInX + x))
+        let amountInX = Number(amountA);
+        let y = Number(await TokenC.balanceOf(SberAMM.address));
+        let x = Number(await TokenA.balanceOf(SberAMM.address));
+
+       let stableSwapOut = (amountInX * y / (amountInX + x)) / 1e18; // ((-amountInX.mul(y)).div((amountInX.add(x))))
+        console.log('amountOutY = log(-amountInX * y / (amountInX + x))', stableSwapOut);
+
+       await SberAMM.swap(2, TokenA.address, amountA);
+
+       // let balanceA_t1 = await TokenA.balanceOf(deployer.address);
+       let balanceC_t1 = await TokenC.balanceOf(deployer.address);
+
+       let amountC_in = ethers.utils.formatEther(balanceC_t1.sub(balanceC_t0));
+
+       console.log("Amount tokenC received: ", Number(amountC_in).toFixed(2));
+
+       let slippage = (expectedOut - Number(amountC_in)) / Number(amountC_in) * 100;
+       console.log("Slippage: ", slippage.toFixed(2), "%");
+
+
+
+
+       
+
+    });
+
 
     it("Should Check All Possible Reverts", async () => {
         await expect(SberAMM.createPair(TokenA.address, TokenA.address, feeRate, false)).to.be.revertedWith("two identical addresses");
