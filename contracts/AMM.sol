@@ -183,8 +183,6 @@ contract SberAMM is Admin {
     // amountOutY = (-amountInX * y) / (amountInX + x)
 
     // @dev swap tokens in pool using modified xy=k formula
-    // @dev uses the function: amountOutY = log(-amountInX * y / (amountInX + x))
-
     function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
@@ -376,6 +374,50 @@ contract SberAMM is Admin {
         }
         return rate;
     }
+
+    // @dev estimateAmountOut 
+    // for front end
+    function estimateAmountOut(uint PID, address tokenIn, uint amount) external view pidExists(PID) returns (uint) {
+        uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
+        uint amountMinusFee = amount - fee;
+        uint amountOut = _calculateEstimatedAmounts(PID, tokenIn, amountMinusFee);
+
+        return uint(amountOut);
+    }
+
+    function _calculateEstimatedAmounts(
+        uint PID,
+        address tokenIn,
+        uint amountMinusFee
+    ) internal view returns (uint) {
+        uint amountOut;
+
+        if (Pools[PID].isStable) {
+            if (Pools[PID].token0 == tokenIn) {
+                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
+
+
+            } else {
+                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
+
+            }
+        } else {
+            if (Pools[PID].token0 == tokenIn) {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount1))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
+                    .unwrap();
+
+            } else {
+                amountOut = ud(amountMinusFee)
+                    .mul(ud(Pools[PID].amount0))
+                    .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
+                    .unwrap();
+            }
+        }
+        return amountOut;
+    }
+
 
     // @dev given a pool id and a token address, return the other token address
     function _getOtherTokenAddr(uint PID, address token0) internal view returns (address token1) {
