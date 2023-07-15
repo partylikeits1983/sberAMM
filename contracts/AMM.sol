@@ -254,7 +254,7 @@ contract SberAMM is Admin {
         SD59x18 _a = sd(int(A));
 
         // this can be simplified...
-        SD59x18 D = _ax + _ay - _a.mul((_ax * _ax) / _ax + (_ay * _ay) / _ay); // flattened _invariantFunc
+        SD59x18 D = _ax + _ay - _a.mul(_ax + _ay); // flattened _invariantFunc
         SD59x18 rx_ = (_ax + _dx).div(_ax);
         SD59x18 b = (_ax * (rx_ - _a.div(rx_))) / _ay - D.div(_ay); // flattened _coefficientFunc
         SD59x18 ry_ = _solveQuad(b, _a);
