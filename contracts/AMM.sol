@@ -179,7 +179,6 @@ contract SberAMM is Admin {
         return (amount_token0, amount_token1);
     }
 
-
     // @dev swap tokens in pool
     // amountOutY = (-amountInX * y) / (amountInX + x)
 
