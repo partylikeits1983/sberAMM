@@ -172,11 +172,11 @@ describe("SberAMM Unit Tests", () => {
 
         const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
 
-        console.log("Slippage on 1 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
-        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
-        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
-        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
+        console.log("Slippage on PID 1:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
+        console.log("TVL TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
+        console.log("TVL TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
     });
 
     it("Should Execute Stable Swap", async () => {
@@ -185,11 +185,11 @@ describe("SberAMM Unit Tests", () => {
 
         const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
 
-        console.log("Slippage on 1 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
-        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
-        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
-        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
+        console.log("Slippage on PID 2:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
+        console.log("TVL TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
+        console.log("TVL TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
     });
 
 
