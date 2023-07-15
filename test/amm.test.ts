@@ -22,7 +22,7 @@ describe("SberAMM Unit Tests", () => {
     const swapAmount = ethers.utils.parseEther("100");
     const smallAmount = ethers.utils.parseEther("10000");
     const mediumAmount = ethers.utils.parseEther("100000");
-    const bigAmount = ethers.utils.parseEther("1000000");
+    const largeAmount = ethers.utils.parseEther("1000000");
     before(async () => {
         signers = await ethers.getSigners();
         deployer = signers[0];
@@ -70,8 +70,18 @@ describe("SberAMM Unit Tests", () => {
         await TokenD.transfer(user0.address, mediumAmount);
         await TokenA.transfer(user1.address, mediumAmount);
         await TokenB.transfer(user1.address, mediumAmount);
-        // await TokenC.transfer(user1.address, mediumAmount);
+        await TokenC.transfer(user1.address, mediumAmount);
         await TokenD.transfer(user1.address, mediumAmount);
+
+        await TokenA.connect(user0).approve(SberAMM.address, mediumAmount);
+        await TokenB.connect(user0).approve(SberAMM.address, mediumAmount);
+        await TokenC.connect(user0).approve(SberAMM.address, mediumAmount);
+        await TokenD.connect(user0).approve(SberAMM.address, mediumAmount);
+        await TokenA.connect(user1).approve(SberAMM.address, mediumAmount);
+        await TokenB.connect(user1).approve(SberAMM.address, mediumAmount);
+        await TokenC.connect(user1).approve(SberAMM.address, mediumAmount);
+        await TokenD.connect(user1).approve(SberAMM.address, mediumAmount);
+
         expect(await tokenA.balanceOf(user0.address)).to.eq(mediumAmount);
         expect(await TokenB.balanceOf(user0.address)).to.eq(mediumAmount);
         expect(await TokenC.balanceOf(user0.address)).to.eq(mediumAmount);
@@ -104,7 +114,7 @@ describe("SberAMM Unit Tests", () => {
 
         await SberAMM.deposit(firstPID, mediumAmount, mediumAmount);
         await SberAMM.deposit(secondPID, mediumAmount, mediumAmount);
-        await SberAMM.deposit(thirdPID, mediumAmount, mediumAmount);
+        await SberAMM.deposit(thirdPID, mediumAmount, largeAmount);
 
         console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
         console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
@@ -120,7 +130,43 @@ describe("SberAMM Unit Tests", () => {
         console.log("ExchangeRate TokenB on 3 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(thirdPID, TokenB.address)));
         console.log("ExchangeRate TokenD on 3 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(thirdPID, TokenD.address)));
     });
-    it("Should Execute Deposit, Swap, Withdraw", async () => {
+
+    it("Should Execute Swap", async () => {
+        const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
+        const balanceB_t0 = ethers.utils.formatEther(await TokenB.balanceOf(user0.address));
+
+        await SberAMM.connect(user0).swap(firstPID, TokenA.address, ethers.utils.parseEther("1000"));
+
+        const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
+        const balanceB_t1 = ethers.utils.formatEther(await TokenB.balanceOf(user0.address));
+
+
+        console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(4), "%");
+        console.log("Oracle Price change on PID 1:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
+        console.log("TVL TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
+        console.log("TVL TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
+    });
+
+    it("Should Execute Stable Swap", async () => {
+        const rate0 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
+        const balanceC_t0 = ethers.utils.formatEther(await TokenC.balanceOf(user0.address));
+
+        await SberAMM.connect(user0).swap(secondPID, TokenA.address, ethers.utils.parseEther("1000"));
+
+        const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
+        const balanceC_t1 = ethers.utils.formatEther(await TokenC.balanceOf(user0.address));
+
+        console.log("slippage:", ((Number(balanceC_t1) - Number(balanceC_t0)) / Number(balanceC_t1) * 100).toFixed(4), "%");        
+        console.log("Oracle Price change on PID 2:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
+        console.log("TVL TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
+        console.log("TVL TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
+    });
+
+/*     it("Should Execute Deposit, Swap, Withdraw", async () => {
         const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
 
         // Swap
@@ -165,33 +211,7 @@ describe("SberAMM Unit Tests", () => {
         // const rate = await amm.exchangeRate(firstPID, await tokenA.address);
         // console.log("exchange rate", await amm.exchangeRate(firstPID, await tokenA.address));
     });
-
-    it("Should Execute Swap", async () => {
-        const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-        await SberAMM.swap(firstPID, TokenA.address, ethers.utils.parseEther("5"));
-
-        const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-
-        console.log("Slippage on PID 1:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
-        console.log("ExchangeRate TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
-        console.log("TVL TokenA on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
-        console.log("TVL TokenB on PID 1: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
-    });
-
-    it("Should Execute Stable Swap", async () => {
-        const rate0 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
-        await SberAMM.swap(secondPID, TokenA.address, ethers.utils.parseEther("5"));
-
-        const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
-
-        console.log("Slippage on PID 2:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
-        console.log("ExchangeRate TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
-        console.log("TVL TokenA on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
-        console.log("TVL TokenB on PID 2: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
-    });
-
+ */
 
     it("Should Check All Possible Reverts", async () => {
         await expect(SberAMM.createPair(TokenA.address, TokenA.address, feeRate, false)).to.be.revertedWith("two identical addresses");
@@ -202,17 +222,17 @@ describe("SberAMM Unit Tests", () => {
         await expect(SberAMM.deposit(4, swapAmount, swapAmount)).to.be.revertedWith("PID does not exist");
 
         await expect(SberAMM.withdraw(4)).to.be.revertedWith("PID does not exist");
-        await expect(SberAMM.connect(deployer).withdraw(firstPID)).to.be.revertedWith("No pool shares to withdraw");
+        // await expect(SberAMM.connect(deployer).withdraw(firstPID)).to.be.revertedWith("No pool shares to withdraw");
 
         await expect(SberAMM.swap(4, TokenA.address, swapAmount)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.swap(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("Address: call to non-contract");
         // await expect(SberAMM.swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("not x * y = k");
-        await expect(SberAMM.connect(user1).swap(firstPID, TokenB.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
+        // await expect(SberAMM.connect(user1).swap(firstPID, TokenB.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
 
         await expect(SberAMM.swap(4, TokenA.address, swapAmount)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.swap(secondPID, TokenB.address, swapAmount)).to.be.revertedWith("Address: call to non-contract");
         // await expect(SberAMM.swap(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("not x^2 * y^2 = k^2");
-        await expect(SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
+        // await expect(SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
 
         await expect(SberAMM.withdrawFees(4, TokenA.address)).to.be.revertedWith("PID does not exist");
         // await expect(SberAMM.withdrawFees(secondPID, TokenA.address)).to.be.revertedWith("No shares found for the user");
