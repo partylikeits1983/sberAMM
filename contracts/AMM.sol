@@ -194,8 +194,8 @@ contract SberAMM is Admin {
         uint amountMinusFee = amount - fee;
         uint amountOut = _calculateAmounts(PID, tokenIn, amountMinusFee);
 
-        IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
         handleFees(PID, tokenIn, fee);
+        IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
         return uint(amountOut);
     }
