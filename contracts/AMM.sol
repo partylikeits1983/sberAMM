@@ -3,6 +3,7 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {UD60x18, ud} from "@prb/math/src/UD60x18.sol";
+import {SD59x18, sd} from "@prb/math/src/SD59x18.sol";
 
 import "./Admin.sol";
 
@@ -35,6 +36,7 @@ contract SberAMM is Admin {
     }
 
     // @dev address token0 => address token1 => fee uint => PID
+    // @gev gets the PoolID given addresses & fee amount
     mapping(address => mapping(address => mapping(uint => uint))) public getPool;
 
     // @dev pool id => Pool struct
@@ -175,22 +177,20 @@ contract SberAMM is Admin {
         uint amountOut;
 
         if (Pools[PID].isStable) {
+            uint A = 250000000000000;
+
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = ud(amountMinusFee)
-                    .mul(ud(Pools[PID].amount1))
-                    .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
-                    .log2()
-                    .unwrap();
+
+                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, A);
+
                 Pools[PID].amount0 += amountMinusFee;
-                Pools[PID].amount1 -= uint(amountOut);
+                Pools[PID].amount1 -= amountOut;
+
             } else {
-                amountOut = ud(amountMinusFee)
-                    .mul(ud(Pools[PID].amount0))
-                    .div((ud(amountMinusFee) + ud(Pools[PID].amount1)))
-                    .log2()
-                    .unwrap();
+                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, A);
+
                 Pools[PID].amount1 += amountMinusFee;
-                Pools[PID].amount0 -= uint(amountOut);
+                Pools[PID].amount0 -= amountOut;
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
@@ -211,6 +211,34 @@ contract SberAMM is Admin {
         }
         return amountOut;
     }
+
+
+    function swapQuoteFunc(
+        uint256 Ax,
+        uint256 Ay,
+        uint256 Dx,
+        uint256 A
+    ) public pure returns (uint256 quote) {
+
+        SD59x18 _ax = sd(int(Ax));
+        SD59x18 _ay = sd(int(Ay));
+        SD59x18 _dx = sd(int(Dx));
+        SD59x18 _a = sd(int(A));
+
+        SD59x18 D = _ax + _ay - _a.mul((_ax * _ax) / _ax + (_ay * _ay) / _ay); // flattened _invariantFunc
+        SD59x18 rx_ = (_ax + _dx).div(_ax);
+        SD59x18 b = (_ax * (rx_ - _a.div(rx_))) / _ay - D.div(_ay); // flattened _coefficientFunc
+        SD59x18 ry_ = _solveQuad(b, _a);
+        SD59x18 Dy = _ay.mul(ry_) - _ay;
+
+        return uint(Dy.abs().unwrap());
+    }
+
+
+    function _solveQuad(SD59x18 b, SD59x18 c) internal pure returns (SD59x18) {
+        return (((b.mul(b)) + (c.mul(sd(4e18)))).sqrt().sub(b)).div(sd(2e18));
+    }
+
 
     function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];

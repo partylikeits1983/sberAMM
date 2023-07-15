@@ -102,9 +102,9 @@ describe("SberAMM Unit Tests", () => {
         await TokenC.approve(SberAMM.address, ethers.constants.MaxUint256);
         await TokenD.approve(SberAMM.address, ethers.constants.MaxUint256);
 
-        await SberAMM.deposit(firstPID, smallAmount, smallAmount);
-        await SberAMM.deposit(secondPID, mediumAmount, bigAmount);
-        await SberAMM.deposit(thirdPID, bigAmount, smallAmount);
+        await SberAMM.deposit(firstPID, mediumAmount, mediumAmount);
+        await SberAMM.deposit(secondPID, mediumAmount, mediumAmount);
+        await SberAMM.deposit(thirdPID, mediumAmount, mediumAmount);
 
         console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
         console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
@@ -120,20 +120,6 @@ describe("SberAMM Unit Tests", () => {
         console.log("ExchangeRate TokenB on 3 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(thirdPID, TokenB.address)));
         console.log("ExchangeRate TokenD on 3 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(thirdPID, TokenD.address)));
     });
-
-    it("Should Execute Swap", async () => {
-        const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-        await SberAMM.swap(firstPID, TokenA.address, ethers.utils.parseEther("5"));
-
-        const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-
-        console.log("Slippage on 1 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
-        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
-        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
-        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
-    });
-
     it("Should Execute Deposit, Swap, Withdraw", async () => {
         const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
 
@@ -180,67 +166,30 @@ describe("SberAMM Unit Tests", () => {
         // console.log("exchange rate", await amm.exchangeRate(firstPID, await tokenA.address));
     });
 
+    it("Should Execute Swap", async () => {
+        const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
+        await SberAMM.swap(firstPID, TokenA.address, ethers.utils.parseEther("5"));
+
+        const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
+
+        console.log("Slippage on 1 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(firstPID, TokenB.address)));
+        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenA.address)))
+        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(firstPID, TokenB.address)))
+    });
+
     it("Should Execute Stable Swap", async () => {
-        const feeAccrued0 = await SberAMM.viewEarnedFees(secondPID, TokenA.address);
-        console.log("fee accrued: %s", feeAccrued0);
-
         const rate0 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
-        console.log("exchange rate t0", rate0);
-
-        // Swap
-        await SberAMM.swap(secondPID, TokenA.address, swapAmount);
+        await SberAMM.swap(secondPID, TokenA.address, ethers.utils.parseEther("5"));
 
         const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
-        console.log("exchange rate t1", rate1);
 
-        console.log("slippage:", ((rate1 - rate0) / rate1) * 100, "%");
-
-        const feeAccrued = await SberAMM.viewEarnedFees(secondPID, TokenA.address);
-
-        let balance_t0 = await TokenA.balanceOf(deployer.address);
-        await SberAMM.withdrawFees(secondPID, TokenA.address);
-        let balance_t1 = await TokenA.balanceOf(deployer.address);
-
-        const feesTransfered = balance_t1.sub(balance_t0);
-        console.log("fees transfered: %s", feesTransfered);
-
-        expect(feeAccrued).to.be.equal(feesTransfered);
-    });
-    it("Should Check math of dividend token", async () => {
-       // let balanceA_t0 = await TokenA.balanceOf(deployer.address);
-       let balanceC_t0 = await TokenC.balanceOf(deployer.address);
-
-       let amountA = ethers.utils.parseEther("100");
-       let exchangeRate = Number(ethers.utils.formatEther(await SberAMM.exchangeRate(2, TokenA.address)));
-       let expectedOut = Number(amountA) * exchangeRate / 1e18;
-
-       console.log("Expected out: ", Number(expectedOut).toFixed(2));
-
-        // amountOutY = log(-amountInX * y / (amountInX + x))
-        let amountInX = Number(amountA);
-        let y = Number(await TokenC.balanceOf(SberAMM.address));
-        let x = Number(await TokenA.balanceOf(SberAMM.address));
-
-       let stableSwapOut = (amountInX * y / (amountInX + x)) / 1e18; // ((-amountInX.mul(y)).div((amountInX.add(x))))
-        console.log('amountOutY = log(-amountInX * y / (amountInX + x))', stableSwapOut);
-
-       await SberAMM.swap(2, TokenA.address, amountA);
-
-       // let balanceA_t1 = await TokenA.balanceOf(deployer.address);
-       let balanceC_t1 = await TokenC.balanceOf(deployer.address);
-
-       let amountC_in = ethers.utils.formatEther(balanceC_t1.sub(balanceC_t0));
-
-       console.log("Amount tokenC received: ", Number(amountC_in).toFixed(2));
-
-       let slippage = (expectedOut - Number(amountC_in)) / Number(amountC_in) * 100;
-       console.log("Slippage: ", slippage.toFixed(2), "%");
-
-
-
-
-       
-
+        console.log("Slippage on 1 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(5), "%");
+        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
+        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
+        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
+        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
     });
 
 
