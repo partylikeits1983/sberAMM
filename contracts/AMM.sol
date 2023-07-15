@@ -154,7 +154,7 @@ contract SberAMM is Admin {
 
     // @dev swap tokens in pool using modified xy=k formula
     // @dev uses the function: amountOutY = log(-amountInX * y / (amountInX + x))
- 
+
     function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
@@ -169,7 +169,7 @@ contract SberAMM is Admin {
         return uint(amountOut);
     }
 
-   function _calculateAmounts(
+    function _calculateAmounts(
         uint PID,
         address tokenIn,
         uint amountMinusFee
@@ -177,17 +177,13 @@ contract SberAMM is Admin {
         uint amountOut;
 
         if (Pools[PID].isStable) {
-            uint A = 250000000000000;
-
             if (Pools[PID].token0 == tokenIn) {
-
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, A);
+                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
-
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, A);
+                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -212,19 +208,24 @@ contract SberAMM is Admin {
         return amountOut;
     }
 
+    /**
+     * @notice stableswap equation
+     * @param Ax asset of token x
+     * @param Ay asset of token y
+     * @param Dx delta x, i.e. token x amount inputted
+     * @return quote The quote for amount of token y swapped for token x amount inputted
+     */
+    function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx) public pure returns (uint256 quote) {
+        // @dev Amplification factor
+        uint A = 250000000000000; // make this a global variable
 
-    function swapQuoteFunc(
-        uint256 Ax,
-        uint256 Ay,
-        uint256 Dx,
-        uint256 A
-    ) public pure returns (uint256 quote) {
-
+        // casting
         SD59x18 _ax = sd(int(Ax));
         SD59x18 _ay = sd(int(Ay));
         SD59x18 _dx = sd(int(Dx));
         SD59x18 _a = sd(int(A));
 
+        // this can be simplified...
         SD59x18 D = _ax + _ay - _a.mul((_ax * _ax) / _ax + (_ay * _ay) / _ay); // flattened _invariantFunc
         SD59x18 rx_ = (_ax + _dx).div(_ax);
         SD59x18 b = (_ax * (rx_ - _a.div(rx_))) / _ay - D.div(_ay); // flattened _coefficientFunc
@@ -234,11 +235,9 @@ contract SberAMM is Admin {
         return uint(Dy.abs().unwrap());
     }
 
-
     function _solveQuad(SD59x18 b, SD59x18 c) internal pure returns (SD59x18) {
         return (((b.mul(b)) + (c.mul(sd(4e18)))).sqrt().sub(b)).div(sd(2e18));
     }
-
 
     function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];

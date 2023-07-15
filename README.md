@@ -62,7 +62,14 @@ amountOut = (-dx * y) / (dx + x)
    <img src="./doc/curve.png">
 </p>
 
-
+## Stable Swap Invariant Curve
+```
+1. D = Ax + Ay - A * (Ax^2 / Ax + Ay^2 / Ay)
+2. rx = (Ax + Dx) / Ax
+3. b = (Ax * (rx - A / rx)) / Ay - D / Ay
+4. ry = ((b^2 + 4 * A)^0.5 - b) / 2
+5. Dy = Ay * ry - Ay
+```
 
 ### Deploying 
 npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
@@ -72,3 +79,6 @@ npx hardhat run scripts/deploy.ts --network siberium
 
 ### Verifying 
 npx hardhat verify --network polygon-mumbai 0x563BA4ecBa9C55B1400E6BFDfCB5f299f4CE7BF7
+
+### Running prettier
+npx prettier --write '**/*.sol'

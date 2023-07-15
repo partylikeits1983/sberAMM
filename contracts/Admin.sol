@@ -31,5 +31,4 @@ contract Admin {
     function modifySplitterAddress(address _dividendPayingERC20) external onlyAdmin {
         dividendPayingERC20 = _dividendPayingERC20;
     }
-
 }
