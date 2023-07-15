@@ -375,9 +375,13 @@ contract SberAMM is Admin {
         return rate;
     }
 
-    // @dev estimateAmountOut 
+    // @dev estimateAmountOut
     // for front end
-    function estimateAmountOut(uint PID, address tokenIn, uint amount) external view pidExists(PID) returns (uint) {
+    function estimateAmountOut(
+        uint PID,
+        address tokenIn,
+        uint amount
+    ) external view pidExists(PID) returns (uint) {
         uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
         uint amountMinusFee = amount - fee;
         uint amountOut = _calculateEstimatedAmounts(PID, tokenIn, amountMinusFee);
@@ -395,11 +399,8 @@ contract SberAMM is Admin {
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
                 amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
-
-
             } else {
                 amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
-
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
@@ -407,7 +408,6 @@ contract SberAMM is Admin {
                     .mul(ud(Pools[PID].amount1))
                     .div((ud(amountMinusFee) + ud(Pools[PID].amount0)))
                     .unwrap();
-
             } else {
                 amountOut = ud(amountMinusFee)
                     .mul(ud(Pools[PID].amount0))
@@ -417,7 +417,6 @@ contract SberAMM is Admin {
         }
         return amountOut;
     }
-
 
     // @dev given a pool id and a token address, return the other token address
     function _getOtherTokenAddr(uint PID, address token0) internal view returns (address token1) {
