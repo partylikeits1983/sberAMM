@@ -39,7 +39,7 @@ contract SberAMM is Admin {
 
     // @dev address token0 => address token1 => fee uint => PID
     // @gev gets the PoolID given addresses & fee amount
-    mapping(address => mapping(address => mapping(uint => uint))) public getPool;
+    mapping(address => mapping(address => mapping(uint => mapping(bool => uint)))) public getPool;
 
     // @dev pool id => Pool struct
     mapping(uint => Pool) public Pools;
@@ -72,7 +72,7 @@ contract SberAMM is Admin {
         require(token0 != token1, "two identical addresses");
         require(token0 != address(0), "Zero Address tokenA");
         require(token1 != address(0), "Zero Address tokenB");
-        require(getPool[token0][token1][_fee] == 0, "Pair already exists");
+        require(getPool[token0][token1][_fee][_isStable] == 0, "Pair already exists");
 
         PIDs++;
         uint PID = PIDs;
@@ -82,8 +82,8 @@ contract SberAMM is Admin {
         Pools[PID].feeRate = _fee;
         Pools[PID].isStable = _isStable;
 
-        getPool[token0][token1][_fee] = PIDs;
-        getPool[token1][token0][_fee] = PIDs;
+        getPool[token0][token1][_fee][_isStable] = PIDs;
+        getPool[token1][token0][_fee][_isStable] = PIDs;
 
         return PID;
     }
@@ -150,6 +150,35 @@ contract SberAMM is Admin {
 
         return (amount_token0, amount_token1);
     }
+
+    // @dev withdraw tokens from pool and destroy liquidity position
+    function withdrawPreview(uint PID) external view pidExists(PID) returns (uint, uint) {
+        uint share = PoolShares[msg.sender][PID];
+        require(share > 0, "No pool shares to withdraw");
+
+        uint amount_token0 = ud(share)
+            .div(ud(Pools[PID].totalShares))
+            .mul(ud(Pools[PID].amount0))
+            .unwrap();
+        uint amount_token1 = ud(share)
+            .div(ud(Pools[PID].totalShares))
+            .mul(ud(Pools[PID].amount1))
+            .unwrap();
+
+        require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
+        require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
+
+        // Calculate the protocol fee
+        uint protocol_fee_token0 = ud(amount_token0).mul(ud(0.01e18)).unwrap();
+        uint protocol_fee_token1 = ud(amount_token1).mul(ud(0.01e18)).unwrap();
+
+        // Subtract the protocol fee from the amount to be transferred
+        amount_token0 -= protocol_fee_token0;
+        amount_token1 -= protocol_fee_token1;
+
+        return (amount_token0, amount_token1);
+    }
+
 
     // @dev swap tokens in pool
     // amountOutY = (-amountInX * y) / (amountInX + x)

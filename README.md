@@ -78,7 +78,7 @@ npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
 npx hardhat run scripts/deploy.ts --network siberium
 
 ### Verifying 
-npx hardhat verify --network polygon-mumbai 0x563BA4ecBa9C55B1400E6BFDfCB5f299f4CE7BF7
+npx hardhat verify --network polygon-mumbai 0xD87A76AEEb2D7bd31BE60CF19CF71A3D508090F2
 
 ### Running prettier
 npx prettier --write '**/*.sol'
