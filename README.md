@@ -82,3 +82,7 @@ npx hardhat verify --network polygon-mumbai 0x776962a6a94ee472CF8E0E05156BdB5A0A
 
 ### Running prettier
 npx prettier --write '**/*.sol'
+
+
+### Desmos Functions: 
+https://www.desmos.com/calculator/h0pq2vbph7
