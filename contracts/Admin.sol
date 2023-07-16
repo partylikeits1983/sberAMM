@@ -1,6 +1,7 @@
-// SPDX-Identifier; MIT
+// SPDX-License-Identifier: BSD-3-Clause
+// Authors: Alexander John Lee & Mikhail Bolshakov
 
-pragma solidity ^0.8.20;
+pragma solidity ^0.8.19;
 
 contract Admin {
     // Sberbank admin functions:
