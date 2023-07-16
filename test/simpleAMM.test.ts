@@ -93,21 +93,14 @@ describe("SberAMM Unit Tests", function () {
 
       await tokenA.connect(user0).approve(amm.address, amountA);
 
-      console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await amm.totalValueLocked(1, tokenA_address)))
-        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await amm.totalValueLocked(1, tokenB_address)))
-        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await amm.exchangeRate(1, tokenA_address)));
-        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await amm.exchangeRate(1, tokenB_address)));
       // Swap
       let amountAIn = "50000";
       let balanceB_t0 = await tokenB.balanceOf(user0.address);
-      console.log("CHECK %s", balanceB_t0)
       await amm.connect(user0).swap(1, tokenA.address, ethers.utils.parseEther(amountAIn));
       let balanceB_t1 = await tokenB.balanceOf(user0.address);
-      console.log("CHECK %s", balanceB_t1)
 
       let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
 
-      console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
       console.log("Amount A in: ", amountAIn);
       console.log("Amount B out: ", Number(amountBOut).toFixed(2));
 
@@ -135,10 +128,6 @@ describe("SberAMM Unit Tests", function () {
   
         await tokenA.connect(user0).approve(amm.address, amountA);
   
-        console.log("TVL TokenA on 1 PID: %s", ethers.utils.formatUnits(await amm.totalValueLocked(1, tokenA_address)))
-        console.log("TVL TokenB on 1 PID: %s", ethers.utils.formatUnits(await amm.totalValueLocked(1, tokenB_address)))
-        console.log("ExchangeRate TokenA on 1 PID: %s", ethers.utils.formatUnits(await amm.exchangeRate(1, tokenA_address)));
-        console.log("ExchangeRate TokenB on 1 PID: %s", ethers.utils.formatUnits(await amm.exchangeRate(1, tokenB_address)));
         // Swap
         let amountAIn = "50000";
         let balanceB_t0 = await tokenB.balanceOf(user0.address);
@@ -147,7 +136,6 @@ describe("SberAMM Unit Tests", function () {
   
         let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
   
-        console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
         console.log("Amount A in: ", amountAIn);
         console.log("Amount B out: ", Number(amountBOut).toFixed(2));
   
