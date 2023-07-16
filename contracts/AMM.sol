@@ -183,12 +183,12 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
+                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
+                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -220,9 +220,9 @@ contract SberAMM is Admin {
      * @param Dx delta x, i.e. token x amount inputted
      * @return quote The quote for amount of token y swapped for token x amount inputted
      */
-    function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx) public pure returns (uint256 quote) {
+    function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx, uint256 A) public pure returns (uint256 quote) {
         // @dev Amplification factor
-        uint A = 250000000000000; // will make this a global variable => currently set at 0.00025
+        // uint A = 250000000000000; // will make this a global variable => currently set at 0.00025
 
         // casting
         SD59x18 _ax = sd(int(Ax));
@@ -405,9 +405,9 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
+                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
+                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
