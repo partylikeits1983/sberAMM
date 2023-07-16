@@ -151,39 +151,16 @@ contract SberAMM is Admin {
         return (amount_token0, amount_token1);
     }
 
-    // @dev withdraw tokens from pool and destroy liquidity position
-    function withdrawPreview(uint PID) external view pidExists(PID) returns (uint, uint) {
-        uint share = PoolShares[msg.sender][PID];
-        require(share > 0, "No pool shares to withdraw");
-
-        uint amount_token0 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount0))
-            .unwrap();
-        uint amount_token1 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount1))
-            .unwrap();
-
-        require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
-        require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
-
-        // Calculate the protocol fee
-        uint protocol_fee_token0 = ud(amount_token0).mul(ud(0.01e18)).unwrap();
-        uint protocol_fee_token1 = ud(amount_token1).mul(ud(0.01e18)).unwrap();
-
-        // Subtract the protocol fee from the amount to be transferred
-        amount_token0 -= protocol_fee_token0;
-        amount_token1 -= protocol_fee_token1;
-
-        return (amount_token0, amount_token1);
-    }
-
-    // @dev swap tokens in pool
-    // amountOutY = (-amountInX * y) / (amountInX + x)
-
-    // @dev swap tokens in pool using modified xy=k formula
-    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) returns (uint) {
+    /**
+     * @notice swap function 
+     * @dev swap tokens in pool using xy=k and hybrid stable swap formula
+     * @dev amountOutY = (-amountInX * y) / (amountInX + x)
+     * @param PID Pool ID of tokens
+     * @param tokenIn tokenIn sent by user
+     * @param amount amount tokenIn
+     * @return amountOut the amount out sent by the AMM
+     */
+    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) PIDstatus(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
@@ -245,7 +222,7 @@ contract SberAMM is Admin {
      */
     function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx) public pure returns (uint256 quote) {
         // @dev Amplification factor
-        uint A = 250000000000000; // make this a global variable
+        uint A = 250000000000000; // will make this a global variable => currently set at 0.00025
 
         // casting
         SD59x18 _ax = sd(int(Ax));
@@ -253,10 +230,9 @@ contract SberAMM is Admin {
         SD59x18 _dx = sd(int(Dx));
         SD59x18 _a = sd(int(A));
 
-        // this can be simplified...
-        SD59x18 D = _ax + _ay - _a.mul(_ax + _ay); // flattened _invariantFunc
+        SD59x18 D = _ax + _ay - _a.mul(_ax + _ay);
         SD59x18 rx_ = (_ax + _dx).div(_ax);
-        SD59x18 b = (_ax * (rx_ - _a.div(rx_))) / _ay - D.div(_ay); // flattened _coefficientFunc
+        SD59x18 b = (_ax * (rx_ - _a.div(rx_))) / _ay - D.div(_ay);
         SD59x18 ry_ = _solveQuad(b, _a);
         SD59x18 Dy = _ay.mul(ry_) - _ay;
 
@@ -267,25 +243,36 @@ contract SberAMM is Admin {
         return (((b.mul(b)) + (c.mul(sd(4e18)))).sqrt().sub(b)).div(sd(2e18));
     }
 
-    function withdrawFees(uint PID, address token) external pidExists(PID) returns (uint) {
-        Pool storage pool = Pools[PID];
-        uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1;
-
+    // @dev earned withdraw fees without withdrawing entire liquidity position
+    function withdrawFees(uint PID) external pidExists(PID) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No shares found for the user");
 
-        Fee memory userFees = Fees[PID][msg.sender];
-        uint lastWithdrawnFee = (token == pool.token0) ? userFees.fee0 : userFees.fee1;
+        Pool storage pool = Pools[PID];
+        address token0 = pool.token0;
+        address token1 = pool.token1;
 
-        uint fee = ud(totalFee)
-            .sub(ud(lastWithdrawnFee))
+        uint totalFee0 = pool.fee0;
+        uint totalFee1 = pool.fee1;
+
+        Fee memory userFees = Fees[PID][msg.sender];
+        uint lastWithdrawnFee0 = userFees.fee0;
+        uint lastWithdrawnFee1 = userFees.fee1;
+        
+        uint fee0 = ud(totalFee0)
+            .sub(ud(lastWithdrawnFee0))
             .mul(ud(share))
             .div(ud(pool.totalShares))
             .unwrap();
 
-        IERC20(token).safeTransfer(msg.sender, fee);
+        uint fee1 = ud(totalFee1)
+            .sub(ud(lastWithdrawnFee1))
+            .mul(ud(share))
+            .div(ud(pool.totalShares))
+            .unwrap();
 
-        return fee;
+        IERC20(token0).safeTransfer(msg.sender, fee0);
+        IERC20(token1).safeTransfer(msg.sender, fee1);
     }
 
     // @dev separate function to handle fees
@@ -301,15 +288,6 @@ contract SberAMM is Admin {
     }
 
     // VIEW FUNCTIONS
-    // X * Y = K
-
-    // pool = 10x & 5y
-    // 2x = 1y
-
-    // exchange rate = (10x / 5y)
-    // exchange_rate = 2
-    // 2 * amount y + amount x = 20
-    // TVL = 20x
 
     // @dev given pool id and token address, return the exchange rate and total value locked
     function totalValueLocked(
@@ -335,6 +313,35 @@ contract SberAMM is Admin {
         return tvl;
     }
 
+    // @dev withdraw tokens from pool and destroy liquidity position
+    function withdrawPreview(uint PID) external view pidExists(PID) returns (uint, uint) {
+        uint share = PoolShares[msg.sender][PID];
+        require(share > 0, "No pool shares to withdraw");
+
+        uint amount_token0 = ud(share)
+            .div(ud(Pools[PID].totalShares))
+            .mul(ud(Pools[PID].amount0))
+            .unwrap();
+        uint amount_token1 = ud(share)
+            .div(ud(Pools[PID].totalShares))
+            .mul(ud(Pools[PID].amount1))
+            .unwrap();
+
+        require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
+        require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
+
+        // Calculate the protocol fee
+        uint protocol_fee_token0 = ud(amount_token0).mul(ud(0.01e18)).unwrap();
+        uint protocol_fee_token1 = ud(amount_token1).mul(ud(0.01e18)).unwrap();
+
+        // Subtract the protocol fee from the amount to be transferred
+        amount_token0 -= protocol_fee_token0;
+        amount_token1 -= protocol_fee_token1;
+
+        return (amount_token0, amount_token1);
+    }
+
+    // @dev view earned fees of single token
     function viewEarnedFees(uint PID, address token) external view pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];
         uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1;

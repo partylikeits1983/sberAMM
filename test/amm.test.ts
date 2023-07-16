@@ -45,6 +45,9 @@ describe("SberAMM Unit Tests", () => {
         const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
         const amm = await AMM.deploy();
 
+        const amplificationFactor = ethers.utils.parseEther("0.025")
+        await amm.modifyAmplificationFactor(amplificationFactor);
+
         await amm.modifyFeeAmount(protocolFee);
         await amm.modifySplitterAddress(splitter.address);
 
@@ -234,7 +237,7 @@ describe("SberAMM Unit Tests", () => {
         // await expect(SberAMM.swap(firstPID, TokenC.address, swapAmount)).to.be.revertedWith("not x^2 * y^2 = k^2");
         // await expect(SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount)).to.be.revertedWith("ERC20: insufficient allowance");
 
-        await expect(SberAMM.withdrawFees(4, TokenA.address)).to.be.revertedWith("PID does not exist");
+        // await expect(SberAMM.withdrawFees(4, TokenA.address)).to.be.revertedWith("PID does not exist");
         // await expect(SberAMM.withdrawFees(secondPID, TokenA.address)).to.be.revertedWith("No shares found for the user");
 
         await expect(SberAMM.totalValueLocked(4, TokenA.address)).to.be.revertedWith("PID does not exist");

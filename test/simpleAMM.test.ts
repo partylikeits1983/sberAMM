@@ -19,6 +19,9 @@ describe("SberAMM Unit Tests", function () {
     const AMM = await ethers.getContractFactory("SberAMM");
     const amm = await AMM.deploy();
 
+    const amplificationFactor = ethers.utils.parseEther("0.025")
+    await amm.modifyAmplificationFactor(amplificationFactor);
+
     // send erc20 tokens to user1
     await tokenA.connect(deployer).transfer(user0.address, ethers.utils.parseEther("1000000"));
     await tokenB.connect(deployer).transfer(user0.address, ethers.utils.parseEther("1000000"));
