@@ -1,7 +1,7 @@
 // a library for performing various math operations
 
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity ^0.8.20;
 
 library SD {
     function mul(int a, int b) public pure returns (int) {

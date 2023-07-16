@@ -91,7 +91,7 @@ const config: HardhatUserConfig = {
     apiKey: 'I6XW4XXUQS4R95CC9V3T49XYMICBF188ZM', // Replace with your Etherscan API key
   },
   solidity: {
-    version: "0.8.19",
+    version: "0.8.20",
     settings: {
       metadata: {
         // Not including the metadata hash
