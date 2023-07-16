@@ -38,28 +38,28 @@ All code and mathematical formulas are original work of Alexander John Lee and M
 
 This swap contract uses the formula, where x is the amount of token x, y is the amount of token y, and k is a constant:
 
-$$
+```math
 {x * y = k}
-$$
+```
 
 ## Calculating change in x from change in y:
 
 From:  
-$$
+```math
 {x * y = k}
-$$
+```
 
 We can deduce:
 
 where dx is the delta of x and dy is the delta of y
-$$
+```math
 {k = (x+dx) * (y+dy)} 
-$$
+```
   
 We arrive at the following:  
-$$
+```math
 {dy = \frac{(-dx*y)} {(dx + x)}}
-$$ 
+```
 
 
 ## Constant Product Function given x = 5, y = 10, dx = 1
