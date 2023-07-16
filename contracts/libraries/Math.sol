@@ -1,6 +1,7 @@
-// a library for performing various math operations
+// SPDX-License-Identifier: BSD-3-Clause
+// Authors: Alexander John Lee & Mikhail Bolshakov
 
-// SPDX-License-Identifier: MIT
+// a library for performing various math operations
 pragma solidity ^0.8.19;
 
 library SD {

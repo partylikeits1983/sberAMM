@@ -41,9 +41,15 @@ async function deploy(): Promise<void> {
   const amm = await AMM.deploy();
   await amm.deployed();
 
-  // const protocolFee = ethers.utils.parseEther("0.01");
-  // await amm.modifyFeeAmount(protocolFee);
-  // await amm.modifySplitterAddress(splitter.address);
+  /*   
+  const amplificationFactor = ethers.utils.parseEther("0.025")
+  await amm.modifyAmplificationFactor(amplificationFactor);
+
+  const protocolFee = ethers.utils.parseEther("0.0001");
+  await amm.modifyFeeAmount(protocolFee);
+  await amm.modifySplitterAddress(splitter.address);
+  */
+
   console.log("amm deployed");
 
   const chainId = Number(network.chainId);

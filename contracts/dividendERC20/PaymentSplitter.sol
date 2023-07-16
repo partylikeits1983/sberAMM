@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BSD-3-Clause
 // OpenZeppelin Contracts (modified) (last updated v4.8.0) (finance/PaymentSplitter.sol)
 
 pragma solidity ^0.8.19;
