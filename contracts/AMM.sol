@@ -275,6 +275,8 @@ contract SberAMM is Admin {
             .div(ud(pool.totalShares))
             .unwrap();
 
+        PoolShares[msg.sender][PID] = 0;
+        
         IERC20(token0).safeTransfer(msg.sender, fee0);
         IERC20(token1).safeTransfer(msg.sender, fee1);
     }
