@@ -191,7 +191,7 @@ contract SberAMM is Admin {
         uint amountMinusFee = amount - fee;
         uint amountOut = _calculateAmounts(PID, tokenIn, amountMinusFee);
 
-        handleFees(PID, tokenIn, fee);
+        _handleFees(PID, tokenIn, fee);
         IERC20(tokenOut).safeTransfer(msg.sender, uint(amountOut));
 
         return uint(amountOut);
@@ -206,12 +206,12 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
+                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
+                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -243,7 +243,7 @@ contract SberAMM is Admin {
      * @param Dx delta x, i.e. token x amount inputted
      * @return quote The quote for amount of token y swapped for token x amount inputted
      */
-    function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx) public pure returns (uint256 quote) {
+    function _swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx) internal pure returns (uint256 quote) {
         // @dev Amplification factor
         uint A = 250000000000000; // make this a global variable
 
@@ -289,7 +289,7 @@ contract SberAMM is Admin {
     }
 
     // @dev separate function to handle fees
-    function handleFees(uint PID, address tokenIn, uint fee) private {
+    function _handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
             Pools[PID].amount0 += fee;
@@ -398,9 +398,9 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
+                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee);
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
+                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee);
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
