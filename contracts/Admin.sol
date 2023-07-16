@@ -17,7 +17,7 @@ contract Admin {
 
     mapping(uint => bool) public pausedPIDs;
 
-    uint public AmplificationFactor; 
+    uint public AmplificationFactor;
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "not deployer");
@@ -46,6 +46,6 @@ contract Admin {
     }
 
     function modifyAmplificationFactor(uint _ampFactor) external onlyAdmin {
-       AmplificationFactor = _ampFactor;
+        AmplificationFactor = _ampFactor;
     }
 }

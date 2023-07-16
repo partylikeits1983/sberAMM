@@ -152,7 +152,7 @@ contract SberAMM is Admin {
     }
 
     /**
-     * @notice swap function 
+     * @notice swap function
      * @dev swap tokens in pool using xy=k and hybrid stable swap formula
      * @dev amountOutY = (-amountInX * y) / (amountInX + x)
      * @param PID Pool ID of tokens
@@ -160,7 +160,11 @@ contract SberAMM is Admin {
      * @param amount amount tokenIn
      * @return amountOut the amount out sent by the AMM
      */
-    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) PIDstatus(PID) returns (uint) {
+    function swap(
+        uint PID,
+        address tokenIn,
+        uint amount
+    ) external pidExists(PID) PIDstatus(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
@@ -183,12 +187,22 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
+                amountOut = swapQuoteFunc(
+                    Pools[PID].amount0,
+                    Pools[PID].amount1,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
+                amountOut = swapQuoteFunc(
+                    Pools[PID].amount1,
+                    Pools[PID].amount0,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -220,7 +234,12 @@ contract SberAMM is Admin {
      * @param Dx delta x, i.e. token x amount inputted
      * @return quote The quote for amount of token y swapped for token x amount inputted
      */
-    function swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx, uint256 A) public pure returns (uint256 quote) {
+    function swapQuoteFunc(
+        uint256 Ax,
+        uint256 Ay,
+        uint256 Dx,
+        uint256 A
+    ) public pure returns (uint256 quote) {
         // @dev Amplification factor
         // uint A = 250000000000000; // will make this a global variable => currently set at 0.00025
 
@@ -258,7 +277,7 @@ contract SberAMM is Admin {
         Fee memory userFees = Fees[PID][msg.sender];
         uint lastWithdrawnFee0 = userFees.fee0;
         uint lastWithdrawnFee1 = userFees.fee1;
-        
+
         uint fee0 = ud(totalFee0)
             .sub(ud(lastWithdrawnFee0))
             .mul(ud(share))
@@ -405,9 +424,19 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
+                amountOut = swapQuoteFunc(
+                    Pools[PID].amount0,
+                    Pools[PID].amount1,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
             } else {
-                amountOut = swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
+                amountOut = swapQuoteFunc(
+                    Pools[PID].amount1,
+                    Pools[PID].amount0,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
