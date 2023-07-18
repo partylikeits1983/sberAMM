@@ -20,6 +20,7 @@ describe("SberAMM Unit Tests", function () {
     const amm = await AMM.deploy();
 
     const amplificationFactor = ethers.utils.parseEther("0.025")
+    console.log("amplification factor", amplificationFactor);
     await amm.modifyAmplificationFactor(amplificationFactor);
 
     // send erc20 tokens to user1
