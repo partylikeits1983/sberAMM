@@ -85,6 +85,8 @@ $$
    <img src="./doc/hybrid_plot.png">
 </p>
 
+### Running Tests
+npx hardhat test
 
 ### Deploying 
 npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
@@ -97,6 +99,8 @@ npx hardhat verify --network polygon-mumbai 0x3a3E1624D2351cBb6D02bA473E02e4F764
 
 ### Running prettier
 npx prettier --write '**/*.sol'
+
+
 
 
 ### Desmos Functions: 
