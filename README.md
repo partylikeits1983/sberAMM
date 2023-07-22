@@ -9,8 +9,8 @@ The research and development of this repository was conducted by Alexander John 
 ## Design
 
 This repository contains smart contracts which are designed to function as a decentralized exchange (DEX). 
-The traditional method of creating a smart contract that functions as a DEX is to use the Automated Market Maker 
-Invariant Curve x*y=k, where x is the amount of token x, y is the amount of token y, and k is a constant. 
+The traditional method of creating a smart contract that functions as a DEX is to use the standard automated market maker (AMM)
+invariant curve x*y=k, where x is the amount of token x, y is the amount of token y, and k is a constant. 
 
 The SberAMM DEX does use this invariant curve, however we go a step further by introducing a formula that enables 
 minimal slippage for assets that are highly correlated, and also uses less gas during its execution on the EVM as compared 
@@ -18,7 +18,7 @@ to other Hybrid Invariant Curve AMMs such as Curve finance.
 
 The SberAMM DEX allows for the creation of two types of token pools. The first type are for non-correlated assets, and 
 as a result we use the invariant curve x*y=k. The second type of pool is for highly correlated asset classes and uses a modified
-invariant curve which within a certain range functions almost as the constant sum invariant curve x+y = k.
+invariant curve which within a certain range functions almost as the constant sum invariant curve x+y = k. This modified invariant curve allows for minimal slippage.
 
 We designed the SberAMM DEX from the perspective of a bank, and as a result we allow for more administrative control over the DEX.
 The deployer of the SberAMM DEX has the ability to blacklist users and pause trading of certain pools.
@@ -91,7 +91,7 @@ npx hardhat test
 ### Deploying 
 npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
 
-#### Deploying on Siberium (currently not working)
+#### Deploying on Siberium (currently not working when using hardhat)
 npx hardhat run scripts/deploy.ts --network siberium
 
 ### Verifying 
@@ -99,8 +99,6 @@ npx hardhat verify --network polygon-mumbai 0x3a3E1624D2351cBb6D02bA473E02e4F764
 
 ### Running prettier
 npx prettier --write '**/*.sol'
-
-
 
 
 ### Desmos Functions: 
