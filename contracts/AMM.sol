@@ -154,7 +154,7 @@ contract SberAMM is Admin {
     /**
      * @notice swap function
      * @dev swap tokens in pool using xy=k and hybrid stable swap formula
-     * @dev amountOutY = (-amountInX * y) / (amountInX + x)
+     * @dev xy=k formula: amountOutY = (-amountInX * y) / (amountInX + x)
      * @param PID Pool ID of tokens
      * @param tokenIn tokenIn sent by user
      * @param amount amount tokenIn
@@ -178,6 +178,7 @@ contract SberAMM is Admin {
         return uint(amountOut);
     }
 
+    // @dev prevents stack too deep errors
     function _calculateAmounts(
         uint PID,
         address tokenIn,
@@ -226,7 +227,7 @@ contract SberAMM is Admin {
      */
     function _swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx, uint256 A) internal pure returns (uint256 quote) {
         // @dev Amplification factor
-        // uint A = 250000000000000; // will make this a global variable => currently set at 0.00025
+        // uint A = 250000000000000; // currently set at 0.00025
 
         // casting
         SD59x18 _ax = sd(int(Ax));
@@ -294,7 +295,6 @@ contract SberAMM is Admin {
     }
 
     // VIEW FUNCTIONS
-
     // @dev given pool id and token address, return the exchange rate and total value locked
     function totalValueLocked(
         uint PID,
@@ -320,6 +320,7 @@ contract SberAMM is Admin {
     }
 
     // @dev withdraw tokens from pool and destroy liquidity position
+    // @dev used on the front end
     function withdrawPreview(uint PID) external view pidExists(PID) returns (uint, uint) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No pool shares to withdraw");
@@ -348,6 +349,7 @@ contract SberAMM is Admin {
     }
 
     // @dev view earned fees of single token
+    // @dev used on the front end
     function viewEarnedFees(uint PID, address token) external view pidExists(PID) returns (uint) {
         Pool storage pool = Pools[PID];
         uint totalFee = (token == pool.token0) ? pool.fee0 : pool.fee1;
@@ -389,7 +391,7 @@ contract SberAMM is Admin {
     }
 
     // @dev estimateAmountOut
-    // for front end
+    // @dev used on the front end
     function estimateAmountOut(
         uint PID,
         address tokenIn,
