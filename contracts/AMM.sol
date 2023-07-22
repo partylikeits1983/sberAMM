@@ -188,12 +188,22 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
+                amountOut = _swapQuoteFunc(
+                    Pools[PID].amount0,
+                    Pools[PID].amount1,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
             } else {
-                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
+                amountOut = _swapQuoteFunc(
+                    Pools[PID].amount1,
+                    Pools[PID].amount0,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -225,7 +235,12 @@ contract SberAMM is Admin {
      * @param Dx delta x, i.e. token x amount inputted
      * @return quote The quote for amount of token y swapped for token x amount inputted
      */
-    function _swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx, uint256 A) internal pure returns (uint256 quote) {
+    function _swapQuoteFunc(
+        uint256 Ax,
+        uint256 Ay,
+        uint256 Dx,
+        uint256 A
+    ) internal pure returns (uint256 quote) {
         // @dev Amplification factor
         // uint A = 250000000000000; // currently set at 0.00025
 
@@ -277,7 +292,7 @@ contract SberAMM is Admin {
             .unwrap();
 
         PoolShares[msg.sender][PID] = 0;
-        
+
         IERC20(token0).safeTransfer(msg.sender, fee0);
         IERC20(token1).safeTransfer(msg.sender, fee1);
     }
@@ -413,9 +428,19 @@ contract SberAMM is Admin {
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
+                amountOut = _swapQuoteFunc(
+                    Pools[PID].amount0,
+                    Pools[PID].amount1,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
             } else {
-                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
+                amountOut = _swapQuoteFunc(
+                    Pools[PID].amount1,
+                    Pools[PID].amount0,
+                    amountMinusFee,
+                    AmplificationFactor
+                );
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
