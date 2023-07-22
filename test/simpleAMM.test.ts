@@ -60,7 +60,6 @@ describe("SberAMM Unit Tests", function () {
       const tokenB_address = tokenB.address;
       const feeRate = ethers.utils.parseEther("0.003");
 
-
       await amm.createPair(tokenA_address, tokenB_address, feeRate, false);
 
       let amountA = ethers.utils.parseEther("1000.0");
@@ -95,16 +94,22 @@ describe("SberAMM Unit Tests", function () {
       await tokenA.connect(user0).approve(amm.address, amountA);
 
       // Swap
-      let amountAIn = "50000";
+      let amountAIn = "10000";
+
+      let rate = ethers.utils.formatEther(await amm.exchangeRate(1, tokenB.address));
+      let expectedOut = Number(amountAIn) * parseInt(rate);
+
       let balanceB_t0 = await tokenB.balanceOf(user0.address);
       await amm.connect(user0).swap(1, tokenA.address, ethers.utils.parseEther(amountAIn));
       let balanceB_t1 = await tokenB.balanceOf(user0.address);
 
       let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
-
-      console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
+      let slippage = ((1 - Number(amountBOut) / expectedOut) * 100).toFixed(2);
+      
+      console.log("Exchange rate:", rate);
       console.log("Amount A in: ", amountAIn);
       console.log("Amount B out: ", Number(amountBOut).toFixed(2));
+      console.log("Slippage", slippage, "%")
 
     });
 
@@ -131,16 +136,22 @@ describe("SberAMM Unit Tests", function () {
         await tokenA.connect(user0).approve(amm.address, amountA);
   
         // Swap
-        let amountAIn = "50000";
+        let amountAIn = "10000";
+
+        let rate = ethers.utils.formatEther(await amm.exchangeRate(1, tokenB.address));
+        let expectedOut = Number(amountAIn) * parseInt(rate);
+  
         let balanceB_t0 = await tokenB.balanceOf(user0.address);
         await amm.connect(user0).swap(1, tokenA.address, ethers.utils.parseEther(amountAIn));
         let balanceB_t1 = await tokenB.balanceOf(user0.address);
   
         let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
-  
-        console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
+        let slippage = ((1 - Number(amountBOut) / expectedOut) * 100).toFixed(2);
+        
+        console.log("Exchange rate:", rate);
         console.log("Amount A in: ", amountAIn);
         console.log("Amount B out: ", Number(amountBOut).toFixed(2));
+        console.log("Slippage", slippage, "%")
   
       });
       
