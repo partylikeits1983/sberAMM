@@ -62,7 +62,7 @@ We arrive at the following:
 ```
 
 
-## Constant Product Function given x = 5, y = 10, dx = 1
+## Constant Product Function given x = 5, y = 10
 <p align="center">
    <img src="./doc/curve.png">
 </p>
