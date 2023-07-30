@@ -266,7 +266,6 @@ contract SberAMM is Admin {
     // @dev earned withdraw fees without withdrawing entire liquidity position
     function withdrawFees(uint PID) external pidExists(PID) {
         uint share = PoolShares[msg.sender][PID];
-        require(share > 0, "No shares found for the user");
 
         Pool storage pool = Pools[PID];
         address token0 = pool.token0;
@@ -279,25 +278,22 @@ contract SberAMM is Admin {
         uint lastWithdrawnFee0 = userFees.fee0;
         uint lastWithdrawnFee1 = userFees.fee1;
 
-        uint fee0 = ud(totalFee0)
-            .sub(ud(lastWithdrawnFee0))
-            .mul(ud(share))
-            .div(ud(pool.totalShares))
-            .unwrap();
+        uint feeToWithdraw0 = (totalFee0 * share) / pool.totalShares - lastWithdrawnFee0;
+        uint feeToWithdraw1 = (totalFee1 * share) / pool.totalShares - lastWithdrawnFee1;
 
-        uint fee1 = ud(totalFee1)
-            .sub(ud(lastWithdrawnFee1))
-            .mul(ud(share))
-            .div(ud(pool.totalShares))
-            .unwrap();
+        require(feeToWithdraw0 != 0 || feeToWithdraw1 != 0, "Zero fees");
+        
+        Fees[PID][msg.sender].fee0 += feeToWithdraw0;
+        Fees[PID][msg.sender].fee1 += feeToWithdraw1;
 
-        PoolShares[msg.sender][PID] = 0;
+        Pools[PID].amount0 -= feeToWithdraw0;
+        Pools[PID].amount1 -= feeToWithdraw1;
 
-        IERC20(token0).safeTransfer(msg.sender, fee0);
-        IERC20(token1).safeTransfer(msg.sender, fee1);
+        IERC20(token0).safeTransfer(msg.sender, feeToWithdraw0);
+        IERC20(token1).safeTransfer(msg.sender, feeToWithdraw1);
     }
 
-    // @dev separate function to handle fees
+// @dev separate function to handle fees
     function _handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
@@ -375,11 +371,7 @@ contract SberAMM is Admin {
         Fee memory userFees = Fees[PID][msg.sender];
         uint lastWithdrawnFee = (token == pool.token0) ? userFees.fee0 : userFees.fee1;
 
-        uint fee = ud(totalFee)
-            .sub(ud(lastWithdrawnFee))
-            .mul(ud(share))
-            .div(ud(pool.totalShares))
-            .unwrap();
+        uint fee = (totalFee * share) / pool.totalShares - lastWithdrawnFee;
 
         return fee;
     }
@@ -391,7 +383,7 @@ contract SberAMM is Admin {
     ) external view pidExists(PID) returns (uint rate) {
         address poolX = Pools[PID].token0;
 
-        if (token0 == poolX) {
+        if (token0 != poolX) {
             uint amountX = Pools[PID].amount0;
             uint amountY = Pools[PID].amount1;
 
