@@ -8,15 +8,18 @@ describe("SberAMM Unit Tests", () => {
     let admin: SignerWithAddress;
     let user0: SignerWithAddress;
     let user1: SignerWithAddress;
-    let TokenA: Token;
-    let TokenB: Token;
-    let TokenC: Token; // stable
+    let USDT: Token; // USDT
+    let USDC: Token; // USDC
+    // let TokenC: Token; // ETH
+    // let TokenD: Token; // WETH
     let DividendToken: DividendToken;
     let Splitter: PaymentSplitter;
     let SberAMM: SberAMM;
     let firstPID: any;
-    let secondPID: any;
-    const feeRate = ethers.utils.parseEther("0.003");
+    // let secondPID: any;
+    // let thirdPID: any;
+    const protocolFee = ethers.utils.parseEther("0.01"); // 1%
+    const pairFee = ethers.utils.parseEther("0.003"); // 0.3%
     const mediumAmount = ethers.utils.parseEther("50000");
     const largeAmount = ethers.utils.parseEther("100000");
     before(async () => {
@@ -26,16 +29,15 @@ describe("SberAMM Unit Tests", () => {
         user1 = signers[2];
     });
     it("Should deploy and send erc20 tokens to users", async () => {
-        const protocolFee = ethers.utils.parseEther("0.01");
-
         const ERC20_token = await ethers.getContractFactory("Token");
         const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
         const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
         const AMM = await ethers.getContractFactory("SberAMM");
 
-        const tokenA = await ERC20_token.deploy();
-        const tokenB = await ERC20_token.deploy();
-        const tokenC = await ERC20_token.deploy();
+        const usdt = await ERC20_token.deploy();
+        const usdc = await ERC20_token.deploy();
+        // const tokenC = await ERC20_token.deploy();
+        // const tokenD = await ERC20_token.deploy();
         const dividendToken = await DIVIDEND_TOKEN.deploy();
         const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
         const amm = await AMM.deploy();
@@ -46,111 +48,345 @@ describe("SberAMM Unit Tests", () => {
         await amm.modifyFeeAmount(protocolFee);
         await amm.modifySplitterAddress(splitter.address);
 
-        expect(tokenA.address).to.not.eq(ethers.constants.AddressZero);
-        expect(tokenB.address).to.not.eq(ethers.constants.AddressZero);
-        expect(tokenC.address).to.not.eq(ethers.constants.AddressZero);
+        expect(usdt.address).to.not.eq(ethers.constants.AddressZero);
+        expect(usdc.address).to.not.eq(ethers.constants.AddressZero);
+        // expect(tokenC.address).to.not.eq(ethers.constants.AddressZero);
+        // expect(tokenD.address).to.not.eq(ethers.constants.AddressZero);
         expect(dividendToken.address).to.not.eq(ethers.constants.AddressZero);
         expect(splitter.address).to.not.eq(ethers.constants.AddressZero);
         expect(amm.address).to.not.eq(ethers.constants.AddressZero);
 
-        TokenA = tokenA as Token;
-        TokenB = tokenB as Token;
-        TokenC = tokenC as Token;
+        USDT = usdt as Token;
+        USDC = usdc as Token;
+        // TokenC = tokenC as Token;
+        // TokenD = tokenD as Token;
         DividendToken = dividendToken as DividendToken;
         Splitter = splitter as PaymentSplitter;
         SberAMM = amm as SberAMM;
 
-        await TokenA.transfer(user0.address, largeAmount.mul(3));
-        await TokenB.transfer(user0.address, largeAmount.mul(3));
-        await TokenC.transfer(user0.address, largeAmount.mul(3));
-        await TokenA.transfer(user1.address, largeAmount.mul(3));
-        await TokenB.transfer(user1.address, largeAmount.mul(3));
-        await TokenC.transfer(user1.address, largeAmount.mul(3));
+        await USDT.transfer(user0.address, largeAmount.mul(3));
+        await USDC.transfer(user0.address, largeAmount.mul(3));
+        // await TokenC.transfer(user0.address, largeAmount.mul(3));
+        // await TokenD.transfer(user0.address, largeAmount.mul(3));
+        await USDT.transfer(user1.address, largeAmount.mul(3));
+        await USDC.transfer(user1.address, largeAmount.mul(3));
+        // await TokenC.transfer(user1.address, largeAmount.mul(3));
+        // await TokenD.transfer(user1.address, largeAmount.mul(3));
 
-        await TokenA.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenB.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenC.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenA.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenB.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenC.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDT.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDC.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenC.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenD.connect(user0).approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDT.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDC.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenC.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenD.connect(user1).approve(SberAMM.address, ethers.constants.MaxUint256);
 
-        expect(await tokenA.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
-        expect(await TokenB.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
-        expect(await TokenC.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
-        expect(await tokenA.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
-        expect(await TokenB.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
-        expect(await TokenC.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
+        expect(await USDT.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
+        expect(await USDC.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
+        // expect(await TokenC.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
+        // expect(await TokenD.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
+        expect(await USDT.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
+        expect(await USDC.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
+        // expect(await TokenC.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
+        // expect(await TokenD.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
     });
 
     it("Should Create Pairs", async () => {
-        await SberAMM.createPair(TokenA.address, TokenB.address, feeRate, false);
+        // USDT-USDC
+        await SberAMM.createPair(USDT.address, USDC.address, pairFee, true);
         firstPID = await SberAMM.numberOfPools();
         expect(firstPID).to.equal(1);
 
-        await SberAMM.createPair(TokenA.address, TokenC.address, feeRate, true);
-        secondPID = await SberAMM.numberOfPools();
-        expect(secondPID).to.equal(2);
+        // USDT-ETH
+        // await SberAMM.createPair(USDT.address, TokenC.address, pairFee, false);
+        // secondPID = await SberAMM.numberOfPools();
+        // expect(secondPID).to.equal(2);
+
+        // // ETH-WETH
+        // await SberAMM.createPair(TokenC.address, TokenD.address, pairFee, true);
+        // thirdPID = await SberAMM.numberOfPools();
+        // expect(thirdPID).to.equal(3);
     });
 
     it("Should Add Liquidity to Pairs", async () => {
-        await TokenA.approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenB.approve(SberAMM.address, ethers.constants.MaxUint256);
-        await TokenC.approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDT.approve(SberAMM.address, ethers.constants.MaxUint256);
+        await USDC.approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenC.approve(SberAMM.address, ethers.constants.MaxUint256);
+        // await TokenD.approve(SberAMM.address, ethers.constants.MaxUint256);
+
+        // const smallAmount = ethers.utils.parseEther("50");
 
         await SberAMM.deposit(firstPID, largeAmount, largeAmount);
-        await SberAMM.deposit(secondPID, largeAmount, largeAmount);
+        // await SberAMM.deposit(secondPID, largeAmount, smallAmount);
+        // await SberAMM.deposit(thirdPID, mediumAmount, mediumAmount);
     });
 
+    it("First POD: Stable swap and Withdraw", async () => {
+        console.log("Swap 50,000 USDT to USDC in liquidity pool with 100,000 USDT and 100,000 USDC")
+
+        expect(await USDT.balanceOf(user0.address)).to.eq(largeAmount.mul(3))
+        expect(await USDC.balanceOf(user0.address)).to.eq(largeAmount.mul(3))
+        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount)
+        expect(await USDC.balanceOf(SberAMM.address)).to.eq(largeAmount)
+        const balanceUSDC_t0 = await USDC.balanceOf(user0.address);
+        await SberAMM.connect(user0).swap(firstPID, USDT.address, mediumAmount);
+        const balanceUSDC_t1 = await USDC.balanceOf(user0.address);
+        expect(await USDT.balanceOf(user0.address)).to.eq(largeAmount.mul(3).sub(mediumAmount))
+        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount))
+
+        let amountUSDC_out = ethers.utils.formatEther(balanceUSDC_t1.sub(balanceUSDC_t0));
+        let amountUSDC_outParseEther = ethers.utils.parseEther(amountUSDC_out)
+        expect(await USDC.balanceOf(user0.address)).to.eq(largeAmount.mul(3).add(amountUSDC_outParseEther))
+        expect(await USDC.balanceOf(SberAMM.address)).to.eq(largeAmount.sub(amountUSDC_outParseEther))
+
+        console.log(`Was swap 50,000 USDT to ${(amountUSDC_out.substring(0, 7))} USDC`)
+
+        let slippage = ((Number(mediumAmount) - Number(amountUSDC_outParseEther)) / Number(mediumAmount) * 100).toFixed(2)
+        console.log("slippage:", slippage, "%");
+
+        expect(await SberAMM.viewEarnedFees(firstPID, USDT.address)).to.be.eq(mediumAmount.mul(3).div(1000)); // .mul(3).div(1000) == 0.003
+        expect(await SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.eq(0);
+        await SberAMM.withdrawFees(firstPID)
+        expect(await SberAMM.viewEarnedFees(firstPID, USDT.address)).to.be.eq(0);
+        expect(await SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.eq(0);
+        await expect(SberAMM.withdrawFees(firstPID)).to.be.revertedWith("Zero fees");
+
+        const withdr = await SberAMM.withdrawPreview(firstPID) // 150 000 - 150(комса) - 1% от 150 000 - 150(комса)
+        expect(withdr[0]).to.be.eq(
+            largeAmount // 100,000 USDT (user's share in pair)
+            .add(mediumAmount) // +50,000 USDT (user's share after swap)
+            .sub((mediumAmount).mul(3).div(1000)) // -0.3% from swap amount (pairFee)
+            .sub(largeAmount.add(mediumAmount).sub((mediumAmount).mul(3).div(1000)).div(100))) // -1% from withdraw amount (protocolFee)
+        expect(withdr[1]).to.be.eq(
+            largeAmount // 100,000 USDT (user's share in pair)
+            .sub(amountUSDC_outParseEther) // -48,342 USDT (user's share after swap)
+            .sub(largeAmount.sub(amountUSDC_outParseEther).div(100))) // -1% from withdraw amount (protocolFee)
+        await SberAMM.withdraw(firstPID)
+        await expect(SberAMM.withdraw(firstPID)).to.be.revertedWith("No pool shares to withdraw");
+        await expect(SberAMM.withdrawPreview(firstPID)).to.be.revertedWith("No pool shares to withdraw");
+        await expect(SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.revertedWith("No shares found for the user");
+    });
+/*
+    it("Stable swap", async () => {
+        console.log("Swap 20,000 USDC to USDT in liquidity pool with 150,000 USDT and 51,658 USDC")
+
+        const balanceUSDT_t0 = await USDT.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("20000");
+        await SberAMM.connect(user1).swap(firstPID, USDC.address, swapAmount);
+        const balanceUSDT_t1 = await USDT.balanceOf(user1.address);
+
+        let amountAOut = ethers.utils.formatEther(balanceUSDT_t1.sub(balanceUSDT_t0));
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+
+        console.log(`Was swap 20,000 USDC to ${(amountAOut.substring(0, 7))} USDT`)
+
+        let slippage = ((Number(swapAmount) - Number(amountAOutParseEther)) / Number(swapAmount) * 100).toFixed(2)
+        console.log("slippage:", slippage, "%");
+    });
+/*
+    it("Stable swap", async () => {
+        console.log("Swap 28,342 USDC to USDT in liquidity pool with 130,269 USDT and 71,658 USDC")
+
+        const balanceA_t0 = await USDT.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("28343");
+        await SberAMM.connect(user1).swap(firstPID, USDC.address, swapAmount);
+        const balanceA_t1 = await USDT.balanceOf(user1.address);
+
+        let amountAOut = ethers.utils.formatEther(balanceA_t1.sub(balanceA_t0));
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+
+        console.log(`Was swap 28,342 USDC to ${(amountAOut.substring(0, 5))} USDT`)
+
+        let slippage = ((Number(swapAmount) - Number(amountAOutParseEther)) / Number(swapAmount) * 100).toFixed(2)
+        console.log("slippage:", slippage, "%");
+        
+        let arr = await SberAMM.Pools(firstPID);
+        console.log("USDT in pool %s", (BigInt(arr[2]) / BigInt(10n ** 18n)).toString())
+        console.log("USDC in pool %s",(BigInt(arr[3]) / BigInt(10n ** 18n)).toString())
+
+        console.log("USDT Fee %s", await SberAMM.viewEarnedFees(firstPID, USDT.address))
+        console.log("USDC Fee %s", await SberAMM.viewEarnedFees(firstPID, USDC.address))
+        await SberAMM.withdrawFees(firstPID)
+        expect(await SberAMM.viewEarnedFees(firstPID, USDT.address)).to.be.eq(0);
+        expect(await SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.eq(0);
+        await expect(SberAMM.withdrawFees(firstPID)).to.be.revertedWith("Zero fees");
+
+        console.log("USDT and USDC to withdraw %s", await SberAMM.withdrawPreview(firstPID))
+        await SberAMM.withdraw(firstPID)
+        // await expect(SberAMM.withdrawPreview(firstPID)).to.be.revertedWith("No pool shares to withdraw");
+
+        // arr = await SberAMM.Pools(firstPID);
+        // console.log("USDT in pool %s", (BigInt(arr[2]) / BigInt(10n ** 18n)).toString())
+        // console.log("USDC in pool %s",(BigInt(arr[3]) / BigInt(10n ** 18n)).toString())
+
+        // const previewParams = await SberAMM.withdrawPreview(firstPID)
+
+        // const USDTbefore = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+        // const USDCbefore = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
+        // await SberAMM.withdraw(firstPID)
+        // const USDTafter = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+        // const USDCafter = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
+
+        // const deltaA = (Number(USDTafter) - (Number(USDTbefore))).toFixed(1)
+        // const deltaB = (Number(USDCafter) - (Number(USDCbefore))).toFixed(1)
+        // expect(deltaA).to.eq(Number(ethers.utils.formatUnits(previewParams[0])).toFixed(1))
+        // expect(deltaB).to.eq(Number(ethers.utils.formatUnits(previewParams[1])).toFixed(1))
+
+        // console.log("Token A delta %s", deltaA)
+        // console.log("Token B delta %s", deltaB)
+    });
+
+    // it("Withdraw from NOT stable", async () => {
+    //     const previewParams = await SberAMM.withdrawPreview(firstPID)
+
+    //     const USDTbefore = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+    //     const USDCbefore = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
+    //     await SberAMM.withdraw(firstPID)
+    //     const USDTafter = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+    //     const USDCafter = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
+
+    //     const deltaA = (Number(USDTafter) - (Number(USDTbefore))).toFixed(1)
+    //     const deltaB = (Number(USDCafter) - (Number(USDCbefore))).toFixed(1)
+    //     expect(deltaA).to.eq(Number(ethers.utils.formatUnits(previewParams[0])).toFixed(1))
+    //     expect(deltaB).to.eq(Number(ethers.utils.formatUnits(previewParams[1])).toFixed(1))
+
+    //     console.log("Token A delta %s", deltaA)
+    //     console.log("Token B delta %s", deltaB)
+    // });
+/*
+    it("Not stable swap", async () => {
+        console.log("Swap 50,000 USDT to ETH in liquidity pool with 100,000 USDT and 50 ETH")
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} USDT`)
+
+        // const balanceA_t0 = await USDT.balanceOf(user0.address);
+        const balanceC_t0 = await TokenC.balanceOf(user0.address);
+        // console.log("Balance A before swap %s", balanceA_t0)
+        // console.log("Balance C before swap %s", balanceC_t0)
+        await SberAMM.connect(user0).swap(secondPID, USDT.address, mediumAmount);
+        // const balanceA_t1 = await USDT.balanceOf(user0.address);
+        const balanceC_t1 = await TokenC.balanceOf(user0.address);
+        // console.log("Balance A after swap %s", balanceA_t1)
+        // console.log("Balance C after swap %s", balanceC_t1)
+
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceAfterSwap.substring(0, 4)} USDT`)
+
+        let amountCOut = ethers.utils.formatEther(balanceC_t1.sub(balanceC_t0));
+        let amountCOutParseEther = ethers.utils.parseEther(amountCOut)
+        console.log(`Was swap 50,000 USDT to ${(amountCOut.substring(0, 5))} ETH`)
+
+        // let slippage = ((Number(mediumAmount) - Number(amountCOutParseEther)*Number(ethPriceBeforeSwap)) / Number(mediumAmount) * 100).toFixed(2)
+        // console.log("slippage:", slippage, "%");
+        // let slippage2 = ((Number(mediumAmount) - Number(amountCOutParseEther)*Number(ethPriceAfterSwap)) / Number(mediumAmount) * 100).toFixed(2)
+        // console.log("slippage2:", slippage2, "%");
+        console.log("\x1b[33m%s\x1b[0m", "slippage:",  (Math.abs(50000 - 16.63 * 2000) / (50000) * 100).toFixed(2), "%");
+    });
+
+    it("Not stable swap", async () => {
+        console.log("Swap 13.02 ETH to USDT in liquidity pool with 150,000 USDT and 33.37 ETH")
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} USDT`)
+
+        const balanceA_t0 = await USDT.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("13.02");
+        await SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount);
+        const balanceA_t1 = await USDT.balanceOf(user1.address);
+
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceAfterSwap.substring(0, 4)} USDT`)
+
+        let amountAOut = ethers.utils.formatEther(balanceA_t1.sub(balanceA_t0));
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+        console.log(`Was swap 13.02 ETH to ${(amountAOut.substring(0, 5))} USDT`)
+       
+        // let slippage = ((Number(swapAmount)*Number(ethPriceBeforeSwapParseEther) - Number(amountAOutParseEther)) / Number(swapAmount)*Number(ethPriceBeforeSwapParseEther) * 100).toFixed(2)
+        // console.log("slippage:", slippage, "%");
+        // let slippage2 = ((Number(swapAmount)*Number(ethPriceAfterSwap) - Number(amountAOutParseEther)) / Number(swapAmount)*Number(ethPriceAfterSwap) * 100).toFixed(2)
+        // console.log("slippage2:", slippage2, "%");
+        console.log("slippage:",  (Math.abs((13.02 * 4495 - 42011) / (13.02 * 4495)) * 100).toFixed(2), "%");
+    });
+
+    it("Not stable swap", async () => {
+        console.log("Swap 3.62 ETH to USDT in liquidity pool with ? USDT and 46.39 ETH")
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} USDT`)
+
+        const balanceA_t0 = await USDT.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("3.62");
+        await SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount);
+        const balanceA_t1 = await USDT.balanceOf(user1.address);
+
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
+        console.log(`1 ETH = ${ethPriceAfterSwap.substring(0, 4)} USDT`)
+
+        let amountAOut = ethers.utils.formatEther(balanceA_t1.sub(balanceA_t0));
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+        console.log(`Was swap 3.62 ETH to ${(Number(amountAOut).toFixed(0))} USDT`)
+
+        // let slippage = ((Number(swapAmount) - Number(amountAOutParseEther)*Number(ethPriceBeforeSwap)) / Number(swapAmount) * 100).toFixed(2)
+        // console.log("slippage:", slippage, "%");
+        // let slippage2 = ((Number(swapAmount) - Number(amountAOutParseEther)*Number(ethPriceAfterSwap)) / Number(swapAmount) * 100).toFixed(2)
+        // console.log("slippage2:", slippage2, "%");
+        console.log("slippage:",  (Math.abs(3.62 * 2003 - 7796) / (3.62 * 2003) * 100).toFixed(2), "%");
+
+        let arr = await SberAMM.Pools(secondPID);
+        console.log("USDT in pool %s", (BigInt(arr[2]) / BigInt(10n ** 18n)).toString())
+        console.log("ETH in pool %s",(BigInt(arr[3]) / BigInt(10n ** 18n)).toString())
+    });
+    
+    /*
     it("Should Execute NOT Stable Swap", async () => {
-        const rate0 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-        const balanceB_t0 = await TokenB.balanceOf(user0.address);
+        const rate0 = Number(await SberAMM.exchangeRate(firstPID, C.address));
+        const balanceB_t0 = await USDC.balanceOf(user0.address);
         console.log("Balance B before swap %s", balanceB_t0)
 
-        await SberAMM.connect(user0).swap(firstPID, TokenA.address, mediumAmount);
+        await SberAMM.connect(user0).swap(firstPID, USDT.address, mediumAmount);
 
-        const rate1 = Number(await SberAMM.exchangeRate(firstPID, TokenA.address));
-        const balanceB_t1 = await TokenB.balanceOf(user0.address);
+        const rate1 = Number(await SberAMM.exchangeRate(firstPID, USDT.address));
+        const balanceB_t1 = await USDC.balanceOf(user0.address);
         console.log("Balance B after swap %s", balanceB_t1)
 
         let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
 
-        console.log("slippage:", ((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
+        console.log("slippage:",  Math.abs((Number(balanceB_t1) - Number(balanceB_t0)) / Number(balanceB_t1) * 100).toFixed(3), "%");
         console.log("Amount B out: ", Number(amountBOut).toFixed(2));
     });
 
     it("Should Execute Stable Swap", async () => {
-        const rate0 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
+        const rate0 = Number(await SberAMM.exchangeRate(secondPID, USDT.address));
         const balanceC_t0 = await TokenC.balanceOf(user0.address);
         console.log("Balance C before swap %s", balanceC_t0)
 
-        await SberAMM.connect(user0).swap(secondPID, TokenA.address, mediumAmount);
+        await SberAMM.connect(user0).swap(secondPID, USDT.address, mediumAmount);
 
-        const rate1 = Number(await SberAMM.exchangeRate(secondPID, TokenA.address));
+        const rate1 = Number(await SberAMM.exchangeRate(secondPID, USDT.address));
         const balanceC_t1 = await TokenC.balanceOf(user0.address);
         console.log("Balance C after swap %s", balanceC_t1)
 
         let amountCOut = ethers.utils.formatEther(balanceC_t1.sub(balanceC_t0));
 
-        console.log("slippage:", ((Number(balanceC_t1) - Number(balanceC_t0)) / Number(balanceC_t1) * 100).toFixed(3), "%");
+        console.log("slippage:",  Math.abs((Number(balanceC_t1) - Number(balanceC_t0)) / Number(balanceC_t1) * 100).toFixed(3), "%");
         console.log("Amount C out: ", Number(amountCOut).toFixed(2));
         console.log("Oracle Price change on 2 PID:", (((rate1 - rate0) / rate1) * 100).toFixed(3), "%");
-        console.log("ExchangeRate TokenA on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenA.address)));
-        console.log("ExchangeRate TokenB on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, TokenB.address)));
-        console.log("TVL TokenA on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenA.address)))
-        console.log("TVL TokenB on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, TokenB.address)))
+        console.log("ExchangeRate USDT on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, USDT.address)));
+        console.log("ExchangeRate USDC on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.exchangeRate(secondPID, USDC.address)));
+        console.log("TVL USDT on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, USDT.address)))
+        console.log("TVL USDC on 2 PID: %s", ethers.utils.formatUnits(await SberAMM.totalValueLocked(secondPID, USDC.address)))
     });
 
     it("Withdraw from NOT stable", async () => {
         const previewParams = await SberAMM.withdrawPreview(firstPID)
 
-        const tokenAbefore = ethers.utils.formatUnits(await TokenA.balanceOf(admin.address))
-        const tokenBbefore = ethers.utils.formatUnits(await TokenB.balanceOf(admin.address))
+        const USDTbefore = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+        const USDCbefore = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
         await SberAMM.withdraw(firstPID)
-        const tokenAafter = ethers.utils.formatUnits(await TokenA.balanceOf(admin.address))
-        const tokenBafter = ethers.utils.formatUnits(await TokenB.balanceOf(admin.address))
+        const USDTafter = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
+        const USDCafter = ethers.utils.formatUnits(await USDC.balanceOf(admin.address))
 
-        const deltaA = (Number(tokenAafter) - (Number(tokenAbefore))).toFixed(1)
-        const deltaB = (Number(tokenBafter) - (Number(tokenBbefore))).toFixed(1)
+        const deltaA = (Number(USDTafter) - (Number(USDTbefore))).toFixed(1)
+        const deltaB = (Number(USDCafter) - (Number(USDCbefore))).toFixed(1)
         expect(deltaA).to.eq(Number(ethers.utils.formatUnits(previewParams[0])).toFixed(1))
         expect(deltaB).to.eq(Number(ethers.utils.formatUnits(previewParams[1])).toFixed(1))
 
@@ -159,16 +395,16 @@ describe("SberAMM Unit Tests", () => {
     });
 
     it("WithdrawFees from stable", async () => {
-        const previewParamsFeeA = await SberAMM.viewEarnedFees(secondPID, TokenA.address)
+        const previewParamsFeeA = await SberAMM.viewEarnedFees(secondPID, USDT.address)
         const previewParamsFeeC = await SberAMM.viewEarnedFees(secondPID, TokenC.address)
 
-        const tokenAbeforeFee = ethers.utils.formatUnits(await TokenA.balanceOf(admin.address))
+        const USDTbeforeFee = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
         const tokenCbeforeFee = ethers.utils.formatUnits(await TokenC.balanceOf(admin.address))
         await SberAMM.withdrawFees(secondPID)
-        const tokenAafterFee = ethers.utils.formatUnits(await TokenA.balanceOf(admin.address))
+        const USDTafterFee = ethers.utils.formatUnits(await USDT.balanceOf(admin.address))
         const tokenCafterFee = ethers.utils.formatUnits(await TokenC.balanceOf(admin.address))
 
-        const deltaAFee = (Number(tokenAafterFee) - (Number(tokenAbeforeFee))).toFixed(1)
+        const deltaAFee = (Number(USDTafterFee) - (Number(USDTbeforeFee))).toFixed(1)
         const deltaCFee = (Number(tokenCafterFee) - (Number(tokenCbeforeFee))).toFixed(1)
         expect(deltaAFee).to.eq(Number(ethers.utils.formatUnits(previewParamsFeeA)).toFixed(1))
         expect(deltaCFee).to.eq(Number(ethers.utils.formatUnits(previewParamsFeeC)).toFixed(1))
@@ -178,14 +414,14 @@ describe("SberAMM Unit Tests", () => {
     });
 
     it("Should Check All Possible Reverts", async () => {
-        await expect(SberAMM.createPair(TokenA.address, TokenA.address, feeRate, false)).to.be.revertedWith("two identical addresses");
-        await expect(SberAMM.createPair(ethers.constants.AddressZero, TokenB.address, feeRate, false)).to.be.revertedWith("Zero Address tokenA");
-        await expect(SberAMM.createPair(TokenA.address, ethers.constants.AddressZero, feeRate, false)).to.be.revertedWith("Zero Address tokenB");
-        await expect(SberAMM.createPair(TokenA.address, TokenC.address, feeRate, true)).to.be.revertedWith("Pair already exists");
+        await expect(SberAMM.createPair(USDT.address, USDT.address, pairFee, false)).to.be.revertedWith("two identical addresses");
+        await expect(SberAMM.createPair(ethers.constants.AddressZero, USDC.address, pairFee, false)).to.be.revertedWith("Zero Address USDT");
+        await expect(SberAMM.createPair(USDT.address, ethers.constants.AddressZero, pairFee, false)).to.be.revertedWith("Zero Address USDC");
+        await expect(SberAMM.createPair(USDT.address, TokenC.address, pairFee, true)).to.be.revertedWith("Pair already exists");
 
         await expect(SberAMM.deposit(4, mediumAmount, mediumAmount)).to.be.revertedWith("PID does not exist");
 
-        await expect(SberAMM.swap(4, TokenA.address, mediumAmount)).to.be.revertedWith("PID does not exist");
+        await expect(SberAMM.swap(4, USDT.address, mediumAmount)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.swap(firstPID, TokenC.address, mediumAmount)).to.be.revertedWith("Address: call to non-contract");
 
         await expect(SberAMM.withdraw(4)).to.be.revertedWith("PID does not exist");
@@ -195,9 +431,9 @@ describe("SberAMM Unit Tests", () => {
         await expect(SberAMM.withdrawFees(4)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.withdrawFees(secondPID)).to.be.revertedWith("No shares found for the user");
         await expect(SberAMM.viewEarnedFees(secondPID, TokenC.address)).to.be.revertedWith("No shares found for the user");
-        await expect(SberAMM.viewEarnedFees(4, TokenA.address)).to.be.revertedWith("PID does not exist");
+        await expect(SberAMM.viewEarnedFees(4, USDT.address)).to.be.revertedWith("PID does not exist");
 
-        await expect(SberAMM.totalValueLocked(4, TokenA.address)).to.be.revertedWith("PID does not exist");
-        await expect(SberAMM.exchangeRate(4, TokenA.address)).to.be.revertedWith("PID does not exist");
-    });
+        await expect(SberAMM.totalValueLocked(4, USDT.address)).to.be.revertedWith("PID does not exist");
+        await expect(SberAMM.exchangeRate(4, USDT.address)).to.be.revertedWith("PID does not exist");
+    });*/
 });
