@@ -184,13 +184,12 @@ describe("SberAMM Unit Tests", function () {
 
             let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
             let slippage = ((1 - Number(amountBOut) / expectedOut) * 100).toFixed(2);
-
+            const fee = ethers.utils.formatEther(await amm.connect(deployer).viewEarnedFees(1, tokenA.address));
+            
             console.log("Exchange rate:", rate);
             console.log("Amount A in: ", amountAIn);
             console.log("Amount B out: ", Number(amountBOut).toFixed(2));
             console.log("Slippage", slippage, "%");
-
-            const fee = ethers.utils.formatEther(await amm.connect(deployer).viewEarnedFees(1, tokenA.address));
             console.log("earned fee", fee);
         });
     });
