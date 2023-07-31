@@ -266,10 +266,9 @@ contract SberAMM is Admin {
     // @dev earned withdraw fees without withdrawing entire liquidity position
     function withdrawFees(uint PID) external pidExists(PID) {
         uint share = PoolShares[msg.sender][PID];
+        require(share > 0, "No shares found for the user");
 
         Pool storage pool = Pools[PID];
-        address token0 = pool.token0;
-        address token1 = pool.token1;
 
         uint totalFee0 = pool.fee0;
         uint totalFee1 = pool.fee1;
@@ -278,8 +277,8 @@ contract SberAMM is Admin {
         uint lastWithdrawnFee0 = userFees.fee0;
         uint lastWithdrawnFee1 = userFees.fee1;
 
-        uint feeToWithdraw0 = (totalFee0 * share) / pool.totalShares - lastWithdrawnFee0;
-        uint feeToWithdraw1 = (totalFee1 * share) / pool.totalShares - lastWithdrawnFee1;
+        uint feeToWithdraw0 = (ud(totalFee0).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(lastWithdrawnFee0)).unwrap();
+        uint feeToWithdraw1 = (ud(totalFee1).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(lastWithdrawnFee1)).unwrap();
 
         require(feeToWithdraw0 != 0 || feeToWithdraw1 != 0, "Zero fees");
         
@@ -289,8 +288,8 @@ contract SberAMM is Admin {
         Pools[PID].amount0 -= feeToWithdraw0;
         Pools[PID].amount1 -= feeToWithdraw1;
 
-        IERC20(token0).safeTransfer(msg.sender, feeToWithdraw0);
-        IERC20(token1).safeTransfer(msg.sender, feeToWithdraw1);
+        IERC20(pool.token0).safeTransfer(msg.sender, feeToWithdraw0);
+        IERC20(pool.token1).safeTransfer(msg.sender, feeToWithdraw1);
     }
 
 // @dev separate function to handle fees
