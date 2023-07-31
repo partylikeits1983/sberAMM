@@ -133,13 +133,13 @@ describe("SberAMM Unit Tests", () => {
 
         expect(await USDT.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
         expect(await USDC.balanceOf(user0.address)).to.eq(largeAmount.mul(3));
-        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount))
+        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount));
         expect(await USDC.balanceOf(SberAMM.address)).to.eq(largeAmount);
         const balanceUSDC_t0 = await USDC.balanceOf(user0.address);
         await SberAMM.connect(user0).swap(firstPID, USDT.address, mediumAmount);
         const balanceUSDC_t1 = await USDC.balanceOf(user0.address);
         expect(await USDT.balanceOf(user0.address)).to.eq(largeAmount.mul(3).sub(mediumAmount));
-        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount).add(mediumAmount))
+        expect(await USDT.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount).add(mediumAmount));
 
         let amountUSDC_out = ethers.utils.formatEther(balanceUSDC_t1.sub(balanceUSDC_t0));
         let amountUSDC_outParseEther = ethers.utils.parseEther(amountUSDC_out);
@@ -159,42 +159,47 @@ describe("SberAMM Unit Tests", () => {
         await SberAMM.withdrawFees(firstPID);
         expect(await SberAMM.viewEarnedFees(firstPID, USDT.address)).to.be.eq(0);
         expect(await SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.eq(0);
-        await SberAMM.withdrawFees(firstPID)
+        await SberAMM.withdrawFees(firstPID);
 
-        const tokensToWithdraw = await SberAMM.withdrawPreview(firstPID)
-        let USDTuserShareAfterSwap = largeAmount.add(mediumAmount) // 150,000 USDT
-        let USDTpairFee = mediumAmount.mul(3).div(1000) // 0.3% from swap amount
-        let USDTprotocolFee = (USDTuserShareAfterSwap.sub(USDTpairFee)).div(100) // -1% from withdraw amount
-        expect(tokensToWithdraw[0]).to.be.eq(USDTuserShareAfterSwap.sub(USDTpairFee).sub(USDTprotocolFee))
-        let DAIuserShareAfterSwap = largeAmount.sub(amountUSDC_outParseEther) // 100,000 - 48,342 USDT
-        let DAIprotocolFee = DAIuserShareAfterSwap.div(100) // -1% from withdraw amount
-        expect(tokensToWithdraw[1]).to.be.eq(DAIuserShareAfterSwap.sub(DAIprotocolFee))
+        const tokensToWithdraw = await SberAMM.withdrawPreview(firstPID);
+        let USDTuserShareAfterSwap = largeAmount.add(mediumAmount); // 150,000 USDT
+        let USDTpairFee = mediumAmount.mul(3).div(1000); // 0.3% from swap amount
+        let USDTprotocolFee = USDTuserShareAfterSwap.sub(USDTpairFee).div(100); // -1% from withdraw amount
+        expect(tokensToWithdraw[0]).to.be.eq(USDTuserShareAfterSwap.sub(USDTpairFee).sub(USDTprotocolFee));
+        let DAIuserShareAfterSwap = largeAmount.sub(amountUSDC_outParseEther); // 100,000 - 48,342 USDT
+        let DAIprotocolFee = DAIuserShareAfterSwap.div(100); // -1% from withdraw amount
+        expect(tokensToWithdraw[1]).to.be.eq(DAIuserShareAfterSwap.sub(DAIprotocolFee));
         await SberAMM.withdraw(firstPID);
         await expect(SberAMM.withdraw(firstPID)).to.be.revertedWith("No pool shares to withdraw");
         await expect(SberAMM.withdrawPreview(firstPID)).to.be.revertedWith("No pool shares to withdraw");
 
-        await expect(SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.revertedWith("No pool shares to withdraw fees");
+        await expect(SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.revertedWith(
+            "No pool shares to withdraw fees",
+        );
         await expect(SberAMM.withdrawFees(firstPID)).to.be.revertedWith("No pool shares to withdraw fees");
     });
-    
-    it("Second PID: Stable Swap", async () => {
-        console.log("Swap 25,000 DAI to USDT in liquidity pool with 50,000 DAI and 50,000 USDT")
 
-        expect(await DAI.balanceOf(user1.address)).to.eq(largeAmount.mul(3))
-        expect(await DAI.balanceOf(SberAMM.address)).to.eq(mediumAmount)
+    it("Second PID: Stable Swap", async () => {
+        console.log("Swap 25,000 DAI to USDT in liquidity pool with 50,000 DAI and 50,000 USDT");
+
+        expect(await DAI.balanceOf(user1.address)).to.eq(largeAmount.mul(3));
+        expect(await DAI.balanceOf(SberAMM.address)).to.eq(mediumAmount);
         const balanceUSDT_t0 = await USDT.balanceOf(user1.address);
 
         await SberAMM.connect(user1).swap(secondPID, DAI.address, firstSwapAmountDAI);
         const balanceUSDT_t1 = await USDT.balanceOf(user1.address);
-        expect(await DAI.balanceOf(user1.address)).to.eq(largeAmount.mul(3).sub(firstSwapAmountDAI))
-        expect(await DAI.balanceOf(SberAMM.address)).to.eq(mediumAmount.add(firstSwapAmountDAI))
+        expect(await DAI.balanceOf(user1.address)).to.eq(largeAmount.mul(3).sub(firstSwapAmountDAI));
+        expect(await DAI.balanceOf(SberAMM.address)).to.eq(mediumAmount.add(firstSwapAmountDAI));
 
         let amountAOut = ethers.utils.formatEther(balanceUSDT_t1.sub(balanceUSDT_t0));
-        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut);
 
-        console.log(`Was swap 25,000 DAI to ${(amountAOut.substring(0, 7))} USDT`)
+        console.log(`Was swap 25,000 DAI to ${amountAOut.substring(0, 7)} USDT`);
 
-        let slippage = ((Number(firstSwapAmountDAI) - Number(amountAOutParseEther)) / Number(firstSwapAmountDAI) * 100).toFixed(2)
+        let slippage = (
+            ((Number(firstSwapAmountDAI) - Number(amountAOutParseEther)) / Number(firstSwapAmountDAI)) *
+            100
+        ).toFixed(2);
         console.log("slippage:", slippage, "%");
     });
 
@@ -206,44 +211,52 @@ describe("SberAMM Unit Tests", () => {
     });
 
     it("Second PID: Stable Swap", async () => {
-        console.log("Swap 55,000 USDT to DAI in liquidity pool with 85,000 DAI and 35,829 USDT")
+        console.log("Swap 55,000 USDT to DAI in liquidity pool with 85,000 DAI and 35,829 USDT");
 
         const balanceDAI_t0 = await DAI.balanceOf(user0.address);
         await SberAMM.connect(user0).swap(secondPID, USDT.address, swapAmountUSDT);
         const balanceDAI_t1 = await DAI.balanceOf(user0.address);
         let amountAOut = ethers.utils.formatEther(balanceDAI_t1.sub(balanceDAI_t0));
-        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut);
 
-        console.log(`Was swap 55,000 USDT to ${(amountAOut.substring(0, 7))} DAI`)
+        console.log(`Was swap 55,000 USDT to ${amountAOut.substring(0, 7)} DAI`);
 
-        let slippage = ((Number(swapAmountUSDT) - Number(amountAOutParseEther)) / Number(swapAmountUSDT) * 100).toFixed(2)
+        let slippage = (
+            ((Number(swapAmountUSDT) - Number(amountAOutParseEther)) / Number(swapAmountUSDT)) *
+            100
+        ).toFixed(2);
         console.log("slippage:", slippage, "%");
     });
 
     it("Second PID: Stable Swap", async () => {
-        console.log("Swap 30,000 DAI to USDT in liquidity pool with 32,976 DAI and 90,829 USDT")
+        console.log("Swap 30,000 DAI to USDT in liquidity pool with 32,976 DAI and 90,829 USDT");
         const balanceUSDT_t0 = await USDT.balanceOf(user0.address);
         await SberAMM.connect(user0).swap(secondPID, DAI.address, secondSwapAmountDAI);
         const balanceUSDT_t1 = await USDT.balanceOf(user0.address);
 
         let amountAOut = ethers.utils.formatEther(balanceUSDT_t1.sub(balanceUSDT_t0));
-        let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
+        let amountAOutParseEther = ethers.utils.parseEther(amountAOut);
 
-        console.log(`Was swap 30,000 DAI to ${(amountAOut.substring(0, 7))} USDT`)
+        console.log(`Was swap 30,000 DAI to ${amountAOut.substring(0, 7)} USDT`);
 
-        let slippage = ((Number(secondSwapAmountDAI) - Number(amountAOutParseEther)) / Number(secondSwapAmountDAI) * 100).toFixed(2)
+        let slippage = (
+            ((Number(secondSwapAmountDAI) - Number(amountAOutParseEther)) / Number(secondSwapAmountDAI)) *
+            100
+        ).toFixed(2);
         console.log("slippage:", slippage, "%");
     });
 
     it("Second PID (user0): Withdraw and WithdrawFees", async () => {
-        let DAIsecondSwapFee = secondSwapAmountDAI.mul(3).div(1000) // 0.3% from swap amount
-        let DAIshareUser0 = (mediumAmount.add(smallAmount)).div(smallAmount) // 10,000 from 60,000 total
-        expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, DAI.address)).to.be.eq(DAIsecondSwapFee.div(DAIshareUser0));
+        let DAIsecondSwapFee = secondSwapAmountDAI.mul(3).div(1000); // 0.3% from swap amount
+        let DAIshareUser0 = mediumAmount.add(smallAmount).div(smallAmount); // 10,000 from 60,000 total
+        expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, DAI.address)).to.be.eq(
+            DAIsecondSwapFee.div(DAIshareUser0),
+        );
         // expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, USDT.address)).to.be.eq(swapAmountUSDT.mul(3).div(1000));
-        await SberAMM.connect(user0).withdrawFees(secondPID)
+        await SberAMM.connect(user0).withdrawFees(secondPID);
         expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, DAI.address)).to.be.eq(0);
         expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, USDT.address)).to.be.eq(0);
-        await SberAMM.connect(user0).withdrawFees(secondPID)
+        await SberAMM.connect(user0).withdrawFees(secondPID);
 
         // const tokensToWithdraw = await SberAMM.withdrawPreview(secondPID)
         // expect(tokensToWithdraw[0]).to.be.eq(
@@ -262,7 +275,7 @@ describe("SberAMM Unit Tests", () => {
         // await expect(SberAMM.viewEarnedFees(secondPID, USDC.address)).to.be.revertedWith("No pool shares to withdraw fees");
         // await expect(SberAMM.withdrawFees(secondPID)).to.be.revertedWith("No pool shares to withdraw fees");
     });
-/*
+    /*
     it("Stable swap", async () => {
         console.log("Swap 28,342 USDC to USDT in liquidity pool with 130,269 USDT and 71,658 USDC")
 
