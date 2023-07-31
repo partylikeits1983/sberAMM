@@ -97,7 +97,7 @@ contract SberAMM is Admin {
      * @param PID Pool ID
      * @param amount_token0 address token1
      * @param amount_token1 fee amount base 1e18
-     */    
+     */
     function deposit(uint PID, uint amount_token0, uint amount_token1) external pidExists(PID) {
         address token0 = Pools[PID].token0;
         address token1 = Pools[PID].token1;
@@ -120,7 +120,7 @@ contract SberAMM is Admin {
      * @param PID Pool ID
      * @return amount_token0 address token1
      * @return amount_token1 fee amount base 1e18
-     */ 
+     */
     function withdraw(uint PID) external pidExists(PID) returns (uint, uint) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No pool shares to withdraw");
@@ -251,12 +251,11 @@ contract SberAMM is Admin {
 
     // @dev earned withdraw fees without withdrawing entire liquidity position
 
-
     /**
      * @notice Withdraw Fees function
      * @dev withdraw earned fees from pool
      * @param PID Pool ID
-     */ 
+     */
     function withdrawFees(uint PID) external pidExists(PID) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No shares found for the user");

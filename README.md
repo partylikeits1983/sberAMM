@@ -98,7 +98,8 @@ npx hardhat run scripts/deploy.ts --network siberium
 npx hardhat verify --network polygon-mumbai 0x3a3E1624D2351cBb6D02bA473E02e4F76482Bf05
 
 ### Running prettier
-npx prettier --write '**/*.sol'
+npx prettier --write '**/*.sol' 
+npx prettier --write '**/*.ts'
 
 
 ### Desmos Functions: 
