@@ -190,12 +190,8 @@ describe("SberAMM Unit Tests", function () {
             console.log("Amount B out: ", Number(amountBOut).toFixed(2));
             console.log("Slippage", slippage, "%");
 
-            const data = await amm.connect(deployer).viewEarnedFees(1, tokenA.address);
-
-
-            console.log(data);
-
-
+            const fee = ethers.utils.formatEther(await amm.connect(deployer).viewEarnedFees(1, tokenA.address));
+            console.log("earned fee", fee);
         });
     });
 });

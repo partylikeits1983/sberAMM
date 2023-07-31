@@ -269,16 +269,10 @@ contract SberAMM is Admin {
         require(share > 0, "No shares found for the user");
 
         Pool storage pool = Pools[PID];
-
-        uint totalFee0 = pool.fee0;
-        uint totalFee1 = pool.fee1;
-
         Fee memory userFees = Fees[PID][msg.sender];
-        uint lastWithdrawnFee0 = userFees.fee0;
-        uint lastWithdrawnFee1 = userFees.fee1;
 
-        uint feeToWithdraw0 = (ud(totalFee0).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(lastWithdrawnFee0)).unwrap();
-        uint feeToWithdraw1 = (ud(totalFee1).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(lastWithdrawnFee1)).unwrap();
+        uint feeToWithdraw0 = (ud(pool.fee0).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(userFees.fee0)).unwrap();
+        uint feeToWithdraw1 = (ud(pool.fee1).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(userFees.fee1)).unwrap();
 
         require(feeToWithdraw0 != 0 || feeToWithdraw1 != 0, "Zero fees");
         
@@ -317,13 +311,13 @@ contract SberAMM is Admin {
             uint amountY = Pools[PID].amount1;
 
             uint rate = ud(amountX).div(ud(amountY)).unwrap();
-            tvl = (ud(rate) * (ud(amountY)) + ud(amountX)).unwrap();
+            tvl = (ud(rate).mul((ud(amountY))).add(ud(amountX))).unwrap();
         } else {
             uint amountX = Pools[PID].amount1;
             uint amountY = Pools[PID].amount0;
 
             uint rate = ud(amountX).div(ud(amountY)).unwrap();
-            tvl = (ud(rate).mul(ud(amountY)) + ud(amountX)).unwrap();
+            tvl = (ud(rate).mul(ud(amountY)).add(ud(amountX))).unwrap();
         }
 
         return tvl;
