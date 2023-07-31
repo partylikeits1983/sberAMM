@@ -86,16 +86,24 @@ $$
 </p>
 
 ### Running Tests
+```
 npx hardhat test
+```
 
 ### Deploying 
-npx hardhat run scripts/deploy.ts --netowork polygon-mumbai
+```
+npx hardhat run scripts/deploy.ts --network polygon-mumbai
+```
 
 #### Deploying on Siberium (currently not working when using hardhat)
+```
 npx hardhat run scripts/deploy.ts --network siberium
+```
 
 ### Verifying 
+```
 npx hardhat verify --network polygon-mumbai 0x3a3E1624D2351cBb6D02bA473E02e4F76482Bf05
+```
 
 ### Running prettier
 ```
