@@ -284,10 +284,8 @@ contract SberAMM is Admin {
     function _handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
-            Pools[PID].amount0 += fee;
             Pools[PID].fee0 += fee;
         } else {
-            Pools[PID].amount1 += fee;
             Pools[PID].fee1 += fee;
         }
     }
