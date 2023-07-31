@@ -133,10 +133,7 @@ contract PaymentSplitter {
      * total shares and their previous withdrawals.
      */
     function releaseNative(address payable account) public {
-        require(
-            IERC20(SDIV_token).balanceOf(account) > 0,
-            "PaymentSplitter: account has no shares"
-        );
+        require(IERC20(SDIV_token).balanceOf(account) > 0, "PaymentSplitter: account has no shares");
 
         uint256 payment = releasableNative(account);
 
@@ -160,10 +157,7 @@ contract PaymentSplitter {
      * contract.
      */
     function releaseERC20(IERC20 token, address account) public {
-        require(
-            IERC20(SDIV_token).balanceOf(account) > 0,
-            "PaymentSplitter: account has no shares"
-        );
+        require(IERC20(SDIV_token).balanceOf(account) > 0, "PaymentSplitter: account has no shares");
 
         uint256 payment = releasableERC20(token, account);
 

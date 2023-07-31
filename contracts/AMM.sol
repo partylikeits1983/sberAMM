@@ -62,13 +62,16 @@ contract SberAMM is Admin {
         _;
     }
 
-    // @dev create pool
-    function createPair(
-        address token0,
-        address token1,
-        uint _fee,
-        bool _isStable
-    ) external returns (uint) {
+    /**
+     * @notice Create Token Pair function
+     * @dev PID is incremented and starts from 1 not 0
+     * @param token0 address token0
+     * @param token1 address token1
+     * @param _fee fee amount base 1e18
+     * @param _isStable uses stable formula or standard formula
+     * @return PID the newly created Pool ID
+     */
+    function createPair(address token0, address token1, uint _fee, bool _isStable) external returns (uint) {
         require(token0 != token1, "two identical addresses");
         require(token0 != address(0), "Zero Address tokenA");
         require(token1 != address(0), "Zero Address tokenB");
@@ -88,7 +91,13 @@ contract SberAMM is Admin {
         return PID;
     }
 
-    // @dev deposit tokens into pool and create liquidity position
+    /**
+     * @notice Deposit function
+     * @dev deposit to specific PID
+     * @param PID Pool ID
+     * @param amount_token0 address token1
+     * @param amount_token1 fee amount base 1e18
+     */    
     function deposit(uint PID, uint amount_token0, uint amount_token1) external pidExists(PID) {
         address token0 = Pools[PID].token0;
         address token1 = Pools[PID].token1;
@@ -105,19 +114,19 @@ contract SberAMM is Admin {
         Pools[PID].amount1 += amount_token1;
     }
 
-    // @dev withdraw tokens from pool and destroy liquidity position
+    /**
+     * @notice Withdraw function
+     * @dev withdraw tokens from pool and destroy liquidity position
+     * @param PID Pool ID
+     * @return amount_token0 address token1
+     * @return amount_token1 fee amount base 1e18
+     */ 
     function withdraw(uint PID) external pidExists(PID) returns (uint, uint) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No pool shares to withdraw");
 
-        uint amount_token0 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount0))
-            .unwrap();
-        uint amount_token1 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount1))
-            .unwrap();
+        uint amount_token0 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount0)).unwrap();
+        uint amount_token1 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount1)).unwrap();
 
         require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
         require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
@@ -160,11 +169,7 @@ contract SberAMM is Admin {
      * @param amount amount tokenIn
      * @return amountOut the amount out sent by the AMM
      */
-    function swap(
-        uint PID,
-        address tokenIn,
-        uint amount
-    ) external pidExists(PID) PIDstatus(PID) returns (uint) {
+    function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) PIDstatus(PID) returns (uint) {
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
@@ -179,31 +184,17 @@ contract SberAMM is Admin {
     }
 
     // @dev prevents stack too deep errors
-    function _calculateAmounts(
-        uint PID,
-        address tokenIn,
-        uint amountMinusFee
-    ) internal returns (uint) {
+    function _calculateAmounts(uint PID, address tokenIn, uint amountMinusFee) internal returns (uint) {
         uint amountOut;
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = _swapQuoteFunc(
-                    Pools[PID].amount0,
-                    Pools[PID].amount1,
-                    amountMinusFee,
-                    AmplificationFactor
-                );
+                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
 
                 Pools[PID].amount0 += amountMinusFee;
                 Pools[PID].amount1 -= amountOut;
             } else {
-                amountOut = _swapQuoteFunc(
-                    Pools[PID].amount1,
-                    Pools[PID].amount0,
-                    amountMinusFee,
-                    AmplificationFactor
-                );
+                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
 
                 Pools[PID].amount1 += amountMinusFee;
                 Pools[PID].amount0 -= amountOut;
@@ -235,12 +226,7 @@ contract SberAMM is Admin {
      * @param Dx delta x, i.e. token x amount inputted
      * @return quote The quote for amount of token y swapped for token x amount inputted
      */
-    function _swapQuoteFunc(
-        uint256 Ax,
-        uint256 Ay,
-        uint256 Dx,
-        uint256 A
-    ) internal pure returns (uint256 quote) {
+    function _swapQuoteFunc(uint256 Ax, uint256 Ay, uint256 Dx, uint256 A) internal pure returns (uint256 quote) {
         // @dev Amplification factor
         // uint A = 250000000000000; // currently set at 0.00025
 
@@ -260,10 +246,17 @@ contract SberAMM is Admin {
     }
 
     function _solveQuad(SD59x18 b, SD59x18 c) internal pure returns (SD59x18) {
-        return (((b.mul(b)) + (c.mul(sd(4e18)))).sqrt().sub(b)).div(sd(2e18));
+        return (((b.mul(b)).add(c.mul(sd(4e18)))).sqrt().sub(b)).div(sd(2e18));
     }
 
     // @dev earned withdraw fees without withdrawing entire liquidity position
+
+
+    /**
+     * @notice Withdraw Fees function
+     * @dev withdraw earned fees from pool
+     * @param PID Pool ID
+     */ 
     function withdrawFees(uint PID) external pidExists(PID) {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No shares found for the user");
@@ -275,7 +268,7 @@ contract SberAMM is Admin {
         uint feeToWithdraw1 = (ud(pool.fee1).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(userFees.fee1)).unwrap();
 
         require(feeToWithdraw0 != 0 || feeToWithdraw1 != 0, "Zero fees");
-        
+
         Fees[PID][msg.sender].fee0 += feeToWithdraw0;
         Fees[PID][msg.sender].fee1 += feeToWithdraw1;
 
@@ -286,7 +279,7 @@ contract SberAMM is Admin {
         IERC20(pool.token1).safeTransfer(msg.sender, feeToWithdraw1);
     }
 
-// @dev separate function to handle fees
+    // @dev separate function to handle fees
     function _handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
@@ -300,10 +293,7 @@ contract SberAMM is Admin {
 
     // VIEW FUNCTIONS
     // @dev given pool id and token address, return the exchange rate and total value locked
-    function totalValueLocked(
-        uint PID,
-        address token0
-    ) external view pidExists(PID) returns (uint tvl) {
+    function totalValueLocked(uint PID, address token0) external view pidExists(PID) returns (uint tvl) {
         address poolX = Pools[PID].token0;
 
         if (token0 == poolX) {
@@ -329,14 +319,8 @@ contract SberAMM is Admin {
         uint share = PoolShares[msg.sender][PID];
         require(share > 0, "No pool shares to withdraw");
 
-        uint amount_token0 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount0))
-            .unwrap();
-        uint amount_token1 = ud(share)
-            .div(ud(Pools[PID].totalShares))
-            .mul(ud(Pools[PID].amount1))
-            .unwrap();
+        uint amount_token0 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount0)).unwrap();
+        uint amount_token1 = ud(share).div(ud(Pools[PID].totalShares)).mul(ud(Pools[PID].amount1)).unwrap();
 
         require(Pools[PID].amount0 >= amount_token0, "Insufficient pool balance for token0");
         require(Pools[PID].amount1 >= amount_token1, "Insufficient pool balance for token1");
@@ -370,10 +354,7 @@ contract SberAMM is Admin {
     }
 
     // @dev given pool id and token address, return the exchange rate
-    function exchangeRate(
-        uint PID,
-        address token0
-    ) external view pidExists(PID) returns (uint rate) {
+    function exchangeRate(uint PID, address token0) external view pidExists(PID) returns (uint rate) {
         address poolX = Pools[PID].token0;
 
         if (token0 != poolX) {
@@ -392,11 +373,7 @@ contract SberAMM is Admin {
 
     // @dev estimateAmountOut
     // @dev used on the front end
-    function estimateAmountOut(
-        uint PID,
-        address tokenIn,
-        uint amount
-    ) external view pidExists(PID) returns (uint) {
+    function estimateAmountOut(uint PID, address tokenIn, uint amount) external view pidExists(PID) returns (uint) {
         uint fee = (ud(Pools[PID].feeRate) * ud(amount)).unwrap();
         uint amountMinusFee = amount - fee;
         uint amountOut = _calculateEstimatedAmounts(PID, tokenIn, amountMinusFee);
@@ -404,28 +381,14 @@ contract SberAMM is Admin {
         return uint(amountOut);
     }
 
-    function _calculateEstimatedAmounts(
-        uint PID,
-        address tokenIn,
-        uint amountMinusFee
-    ) internal view returns (uint) {
+    function _calculateEstimatedAmounts(uint PID, address tokenIn, uint amountMinusFee) internal view returns (uint) {
         uint amountOut;
 
         if (Pools[PID].isStable) {
             if (Pools[PID].token0 == tokenIn) {
-                amountOut = _swapQuoteFunc(
-                    Pools[PID].amount0,
-                    Pools[PID].amount1,
-                    amountMinusFee,
-                    AmplificationFactor
-                );
+                amountOut = _swapQuoteFunc(Pools[PID].amount0, Pools[PID].amount1, amountMinusFee, AmplificationFactor);
             } else {
-                amountOut = _swapQuoteFunc(
-                    Pools[PID].amount1,
-                    Pools[PID].amount0,
-                    amountMinusFee,
-                    AmplificationFactor
-                );
+                amountOut = _swapQuoteFunc(Pools[PID].amount1, Pools[PID].amount0, amountMinusFee, AmplificationFactor);
             }
         } else {
             if (Pools[PID].token0 == tokenIn) {
