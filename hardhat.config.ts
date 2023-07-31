@@ -11,101 +11,99 @@ dotenvConfig({ path: resolve(__dirname, dotenvConfigPath) });
 // Ensure that we have all the environment variables we need.
 const mnemonic: string | undefined = process.env.MNEMONIC;
 if (!mnemonic) {
-  throw new Error("Please set your MNEMONIC in a .env file");
+    throw new Error("Please set your MNEMONIC in a .env file");
 }
 
 const chainIds = {
-  "arbitrum-mainnet": 42161,
-  avalanche: 43114,
-  bsc: 56,
-  hardhat: 31337,
-  mainnet: 1,
-  "optimism-mainnet": 10,
-  "polygon-mainnet": 137,
-  "polygon-mumbai": 80001,
-  sepolia: 11155111,
-  "siberium": 111000,
-  celoTest: 44787,
+    "arbitrum-mainnet": 42161,
+    avalanche: 43114,
+    bsc: 56,
+    hardhat: 31337,
+    mainnet: 1,
+    "optimism-mainnet": 10,
+    "polygon-mainnet": 137,
+    "polygon-mumbai": 80001,
+    sepolia: 11155111,
+    siberium: 111000,
+    celoTest: 44787,
 };
 
-
 function getChainConfig(chain: keyof typeof chainIds): NetworkUserConfig {
-  let jsonRpcUrl: string;
-  switch (chain) {
-    case "avalanche":
-      jsonRpcUrl = "https://api.avax.network/ext/bc/C/rpc";
-      break;
-    case "bsc":
-      jsonRpcUrl = "https://bsc-dataseed1.binance.org";
-      break;
-    case "polygon-mumbai":
-      jsonRpcUrl = "https://polygon-mumbai.gateway.tenderly.co";
-      break;
-    case "siberium":
-      jsonRpcUrl = "https://rpc.test.siberium.net";
-      break;
-    case "celoTest":
-      jsonRpcUrl = "https://alfajores-forno.celo-testnet.org";
-      break;
-    default:
-      jsonRpcUrl = "https://matic-mumbai.chainstacklabs.com"; // https://matic-mumbai.chainstacklabs.com	
-  }
-  return {
-    accounts: {
-      count: 10,
-      mnemonic,
-      path: "m/44'/60'/0'/0",
-    },
-    chainId: chainIds[chain],
-    url: jsonRpcUrl,
-  };
+    let jsonRpcUrl: string;
+    switch (chain) {
+        case "avalanche":
+            jsonRpcUrl = "https://api.avax.network/ext/bc/C/rpc";
+            break;
+        case "bsc":
+            jsonRpcUrl = "https://bsc-dataseed1.binance.org";
+            break;
+        case "polygon-mumbai":
+            jsonRpcUrl = "https://polygon-mumbai.gateway.tenderly.co";
+            break;
+        case "siberium":
+            jsonRpcUrl = "https://rpc.test.siberium.net";
+            break;
+        case "celoTest":
+            jsonRpcUrl = "https://alfajores-forno.celo-testnet.org";
+            break;
+        default:
+            jsonRpcUrl = "https://matic-mumbai.chainstacklabs.com"; // https://matic-mumbai.chainstacklabs.com
+    }
+    return {
+        accounts: {
+            count: 10,
+            mnemonic,
+            path: "m/44'/60'/0'/0",
+        },
+        chainId: chainIds[chain],
+        url: jsonRpcUrl,
+    };
 }
 
-
 const config: HardhatUserConfig = {
-  networks: {
-    hardhat: {
-      accounts: {
-        mnemonic,
-      },
-      chainId: chainIds.hardhat,
+    networks: {
+        hardhat: {
+            accounts: {
+                mnemonic,
+            },
+            chainId: chainIds.hardhat,
+        },
+        arbitrum: getChainConfig("arbitrum-mainnet"),
+        avalanche: getChainConfig("avalanche"),
+        bsc: getChainConfig("bsc"),
+        mainnet: getChainConfig("mainnet"),
+        optimism: getChainConfig("optimism-mainnet"),
+        "polygon-mainnet": getChainConfig("polygon-mainnet"),
+        "polygon-mumbai": getChainConfig("polygon-mumbai"),
+        sepolia: getChainConfig("sepolia"),
+        siberium: getChainConfig("siberium"),
+        celoTest: getChainConfig("celoTest"),
     },
-    arbitrum: getChainConfig("arbitrum-mainnet"),
-    avalanche: getChainConfig("avalanche"),
-    bsc: getChainConfig("bsc"),
-    mainnet: getChainConfig("mainnet"),
-    optimism: getChainConfig("optimism-mainnet"),
-    "polygon-mainnet": getChainConfig("polygon-mainnet"),
-    "polygon-mumbai": getChainConfig("polygon-mumbai"),
-    sepolia: getChainConfig("sepolia"),
-    siberium: getChainConfig("siberium"),
-    celoTest: getChainConfig("celoTest"),
-  },
-  paths: {
-    artifacts: "./artifacts",
-    cache: "./cache",
-    sources: "./contracts",
-    tests: "./test",
-  },
-  etherscan: {
-    apiKey: 'I6XW4XXUQS4R95CC9V3T49XYMICBF188ZM', // Replace with your Etherscan API key
-  },
-  solidity: {
-    version: "0.8.19",
-    settings: {
-      metadata: {
-        // Not including the metadata hash
-        // https://github.com/paulrberg/hardhat-template/issues/31
-        bytecodeHash: "none",
-      },
-      // Disable the optimizer when debugging
-      // https://hardhat.org/hardhat-network/#solidity-optimizer-support
-      optimizer: {
-        enabled: true,
-        runs: 10000,
-      },
+    paths: {
+        artifacts: "./artifacts",
+        cache: "./cache",
+        sources: "./contracts",
+        tests: "./test",
     },
-  }
+    etherscan: {
+        apiKey: "I6XW4XXUQS4R95CC9V3T49XYMICBF188ZM", // Replace with your Etherscan API key
+    },
+    solidity: {
+        version: "0.8.19",
+        settings: {
+            metadata: {
+                // Not including the metadata hash
+                // https://github.com/paulrberg/hardhat-template/issues/31
+                bytecodeHash: "none",
+            },
+            // Disable the optimizer when debugging
+            // https://hardhat.org/hardhat-network/#solidity-optimizer-support
+            optimizer: {
+                enabled: true,
+                runs: 10000,
+            },
+        },
+    },
 };
 
 export default config;

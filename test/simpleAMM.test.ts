@@ -76,9 +76,7 @@ describe("SberAMM Unit Tests", function () {
             const feeRate = ethers.utils.parseEther("0.001");
 
             const isStable = false;
-            await amm
-                .connect(deployer)
-                .createPair(tokenA_address, tokenB_address, feeRate, isStable);
+            await amm.connect(deployer).createPair(tokenA_address, tokenB_address, feeRate, isStable);
 
             let amountA = ethers.utils.parseEther("100000.0");
             let amountB = ethers.utils.parseEther("100000.0");
@@ -117,9 +115,7 @@ describe("SberAMM Unit Tests", function () {
             const feeRate = ethers.utils.parseEther("0.001");
 
             const isStable = true;
-            await amm
-                .connect(deployer)
-                .createPair(tokenA_address, tokenB_address, feeRate, isStable);
+            await amm.connect(deployer).createPair(tokenA_address, tokenB_address, feeRate, isStable);
 
             let amountA = ethers.utils.parseEther("100000.0");
             let amountB = ethers.utils.parseEther("100000.0");
@@ -158,9 +154,7 @@ describe("SberAMM Unit Tests", function () {
             const feeRate = ethers.utils.parseEther("0.001");
 
             const isStable = true;
-            await amm
-                .connect(deployer)
-                .createPair(tokenA_address, tokenB_address, feeRate, isStable);
+            await amm.connect(deployer).createPair(tokenA_address, tokenB_address, feeRate, isStable);
 
             let amountA = ethers.utils.parseEther("100000.0");
             let amountB = ethers.utils.parseEther("100000.0");
@@ -185,7 +179,7 @@ describe("SberAMM Unit Tests", function () {
             let amountBOut = ethers.utils.formatEther(balanceB_t1.sub(balanceB_t0));
             let slippage = ((1 - Number(amountBOut) / expectedOut) * 100).toFixed(2);
             const fee = ethers.utils.formatEther(await amm.connect(deployer).viewEarnedFees(1, tokenA.address));
-            
+
             console.log("Exchange rate:", rate);
             console.log("Amount A in: ", amountAIn);
             console.log("Amount B out: ", Number(amountBOut).toFixed(2));
