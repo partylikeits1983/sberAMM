@@ -172,6 +172,7 @@ contract SberAMM is Admin {
      * @return amountOut the amount out sent by the AMM
      */
     function swap(uint PID, address tokenIn, uint amount) external pidExists(PID) PIDstatus(PID) returns (uint) {
+        require(tokenIn == Pools[PID].token0 || tokenIn == Pools[PID].token1, "Wrong token address");
         require(IERC20(tokenIn).transferFrom(msg.sender, address(this), amount));
 
         address tokenOut = _getOtherTokenAddr(PID, tokenIn);
@@ -284,8 +285,10 @@ contract SberAMM is Admin {
     function _handleFees(uint PID, address tokenIn, uint fee) private {
         // Distribute fees among liquidity providers
         if (Pools[PID].token0 == tokenIn) {
+            Pools[PID].amount0 += fee;
             Pools[PID].fee0 += fee;
         } else {
+            Pools[PID].amount1 += fee;
             Pools[PID].fee1 += fee;
         }
     }
@@ -356,7 +359,7 @@ contract SberAMM is Admin {
     function exchangeRate(uint PID, address token0) external view pidExists(PID) returns (uint rate) {
         address poolX = Pools[PID].token0;
 
-        if (token0 != poolX) {
+        if (token0 == poolX) {
             uint amountX = Pools[PID].amount0;
             uint amountY = Pools[PID].amount1;
 
