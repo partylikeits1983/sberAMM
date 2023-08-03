@@ -187,7 +187,7 @@ describe("SberAMM Unit Tests", () => {
         await expect(SberAMM.withdraw(4)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.withdrawPreview(4)).to.be.revertedWith("PID does not exist");
 
-        await expect(SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.revertedWith("No pool shares to withdraw fees",);
+        await expect(SberAMM.viewEarnedFees(firstPID, USDC.address)).to.be.revertedWith("No pool shares to withdraw fees");
         await expect(SberAMM.withdrawFees(firstPID)).to.be.revertedWith("No pool shares to withdraw fees");
         await expect(SberAMM.withdrawFees(4)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.viewEarnedFees(4, USDT.address)).to.be.revertedWith("PID does not exist");
@@ -265,8 +265,8 @@ describe("SberAMM Unit Tests", () => {
         expect(await SberAMM.connect(user0).viewEarnedFees(secondPID, USDT.address)).to.be.eq(0);
         await SberAMM.connect(user0).withdrawFees(secondPID);
 
-        await SberAMM.withdraw(secondPID)
-        await SberAMM.connect(user0).withdraw(secondPID)
+        await SberAMM.withdraw(secondPID);
+        await SberAMM.connect(user0).withdraw(secondPID);
         await expect(SberAMM.withdraw(secondPID)).to.be.revertedWith("No pool shares to withdraw");
         await expect(SberAMM.withdrawPreview(secondPID)).to.be.revertedWith("No pool shares to withdraw");
         await expect(SberAMM.connect(user0).withdraw(secondPID)).to.be.revertedWith("No pool shares to withdraw");
@@ -285,11 +285,10 @@ describe("SberAMM Unit Tests", () => {
         await SberAMM.connect(user2).deposit(thirdPID, largeAmount, wethAmount);
     });
 
-    it("Third PID: Swap and Withdraw", async () => {
+    it("Third PID: Swap", async () => {
         console.log("Swap 50,000 DAI to WETH in liquidity pool with 100,000 DAI and 50 WETH");
-        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address))
-        let ethPriceBeforeSwapParseEther = ethers.utils.parseEther(ethPriceBeforeSwap)
-        console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} DAI`)
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH before swap = ${ethPriceBeforeSwap.substring(0, 6)} DAI`);
 
         expect(await DAI.balanceOf(user2.address)).to.eq(largeAmount.mul(3).sub(largeAmount));
         expect(await WETH.balanceOf(user2.address)).to.eq(smallAmount.mul(3).sub(wethAmount));
@@ -301,102 +300,83 @@ describe("SberAMM Unit Tests", () => {
         expect(await DAI.balanceOf(user2.address)).to.eq(largeAmount.mul(3).sub(mediumAmount).sub(largeAmount));
         expect(await DAI.balanceOf(SberAMM.address)).to.eq(largeAmount.add(mediumAmount));
 
-        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address))
-        let ethPriceAfterSwapParseEther = ethers.utils.parseEther(ethPriceAfterSwap)
-        console.log(`1 ETH = ${ethPriceAfterSwap} DAI`)
-        console.log(`1 ETH = ${ethPriceAfterSwapParseEther} DAI`)
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH after swap = ${ethPriceAfterSwap.substring(0, 6)} DAI`);
 
         let amountWETH_out = ethers.utils.formatEther(balanceWETH_t1.sub(balanceWETH_t0));
         let amountWETH_outParseEther = ethers.utils.parseEther(amountWETH_out);
         expect(await WETH.balanceOf(user2.address)).to.eq(smallAmount.mul(3).sub(wethAmount).add(amountWETH_outParseEther));
         expect(await WETH.balanceOf(SberAMM.address)).to.eq(wethAmount.sub(amountWETH_outParseEther));
+        console.log(`Was swap 50,000 DAI to ${amountWETH_out.substring(0, 6)} WETH`);
 
-        console.log(`Was swap 50,000 DAI to ${amountWETH_out.substring(0, 7)} WETH`);
-
-        let slippage1 = (((Number(mediumAmount) - Number(amountWETH_outParseEther)) / Number(mediumAmount)) * 100).toFixed(2);
-        console.log("slippage1:", slippage1, "%");
-
-        let slippage2 = ((((Number(mediumAmount) - Number(amountWETH_outParseEther)) * Number(ethPriceBeforeSwapParseEther)) / Number(mediumAmount)) * 100).toFixed(2)
-        console.log("slippage2:", slippage2, "%");
-        let slippage3 = ((((Number(mediumAmount) - Number(amountWETH_outParseEther)) * Number(ethPriceAfterSwapParseEther)) / Number(mediumAmount)) * 100).toFixed(2)
-        console.log("slippage3:", slippage3, "%");
-        console.log("\x1b[33m%s\x1b[0m", "slippage:",  (Math.abs(50000 - 16.63 * 2000) / (50000) * 100).toFixed(2), "%");
+        console.log("slippage:", ((Math.abs(50000 - 16.63 * 2000) / 50000) * 100).toFixed(2), "%");
 
         await expect(SberAMM.totalValueLocked(4, USDT.address)).to.be.revertedWith("PID does not exist");
         await expect(SberAMM.exchangeRate(4, USDT.address)).to.be.revertedWith("PID does not exist");
-
-        // expect(await SberAMM.viewEarnedFees(firstPID, DAI.address)).to.be.eq(mediumAmount.mul(3).div(1000)); // .mul(3).div(1000) == 0.003
-        // expect(await SberAMM.viewEarnedFees(firstPID, WETH.address)).to.be.eq(0);
-        // await SberAMM.withdrawFees(firstPID);
-        // expect(await SberAMM.viewEarnedFees(firstPID, DAI.address)).to.be.eq(0);
-        // expect(await SberAMM.viewEarnedFees(firstPID, WETH.address)).to.be.eq(0);
-        // await SberAMM.withdrawFees(firstPID);
-
-        // const tokensToWithdraw = await SberAMM.withdrawPreview(firstPID);
-        // let DAIuserShareAfterSwap = largeAmount.add(mediumAmount); // 150,000 DAI
-        // let DAIpairFee = mediumAmount.mul(3).div(1000); // 0.3% from swap amount
-        // let DAIprotocolFee = DAIuserShareAfterSwap.sub(DAIpairFee).div(100); // -1% from withdraw amount
-        // expect(tokensToWithdraw[0]).to.be.eq(DAIuserShareAfterSwap.sub(DAIpairFee).sub(DAIprotocolFee));
-        // let DAIuserShareAfterSwap = largeAmount.sub(amountWETH_outParseEther); // 100,000 - 48,342 DAI
-        // let DAIprotocolFee = DAIuserShareAfterSwap.div(100); // -1% from withdraw amount
-        // expect(tokensToWithdraw[1]).to.be.eq(DAIuserShareAfterSwap.sub(DAIprotocolFee));
-        // await SberAMM.withdraw(firstPID);
-        // await expect(SberAMM.withdraw(firstPID)).to.be.revertedWith("No pool shares to withdraw");
-        // await expect(SberAMM.withdrawPreview(firstPID)).to.be.revertedWith("No pool shares to withdraw");
-
-        // await expect(SberAMM.viewEarnedFees(firstPID, WETH.address)).to.be.revertedWith("No pool shares to withdraw fees",);
-        // await expect(SberAMM.withdrawFees(firstPID)).to.be.revertedWith("No pool shares to withdraw fees");
     });
 
-    // it("Not stable swap", async () => {
-    //     console.log("Swap 13.02 ETH to USDT in liquidity pool with 150,000 USDT and 33.37 ETH")
-    //     let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
-    //     console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} USDT`)
+    it("Third PID: Swap", async () => {
+        console.log("Swap 13.02 ETH to DAI in liquidity pool with 150,000 DAI and 33.37 ETH");
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH before swap = ${ethPriceBeforeSwap.substring(0, 6)} DAI`);
 
-    //     const balanceA_t0 = await USDT.balanceOf(user1.address);
-    //     const swapAmount = ethers.utils.parseEther("13.02");
-    //     await SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount);
-    //     const balanceA_t1 = await USDT.balanceOf(user1.address);
+        const balanceDAI_t0 = await DAI.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("13.02");
+        await SberAMM.connect(user1).swap(thirdPID, WETH.address, swapAmount);
+        const balanceDAI_t1 = await DAI.balanceOf(user1.address);
 
-    //     let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
-    //     console.log(`1 ETH = ${ethPriceAfterSwap.substring(0, 4)} USDT`)
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH after swap = ${ethPriceAfterSwap.substring(0, 6)} DAI`);
 
-    //     let amountAOut = ethers.utils.formatEther(balanceA_t1.sub(balanceA_t0));
-    //     let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
-    //     console.log(`Was swap 13.02 ETH to ${(amountAOut.substring(0, 5))} USDT`)
-       
-    //     // let slippage = ((Number(swapAmount)*Number(ethPriceBeforeSwapParseEther) - Number(amountAOutParseEther)) / Number(swapAmount)*Number(ethPriceBeforeSwapParseEther) * 100).toFixed(2)
-    //     // console.log("slippage:", slippage, "%");
-    //     // let slippage2 = ((Number(swapAmount)*Number(ethPriceAfterSwap) - Number(amountAOutParseEther)) / Number(swapAmount)*Number(ethPriceAfterSwap) * 100).toFixed(2)
-    //     // console.log("slippage2:", slippage2, "%");
-    //     console.log("slippage:",  (Math.abs((13.02 * 4495 - 42011) / (13.02 * 4495)) * 100).toFixed(2), "%");
-    // });
+        let amountAOut = ethers.utils.formatEther(balanceDAI_t1.sub(balanceDAI_t0));
+        console.log(`Was swap 13.02 ETH to ${amountAOut.substring(0, 5)} DAI`);
 
-    // it("Not stable swap", async () => {
-    //     console.log("Swap 3.62 ETH to USDT in liquidity pool with ? USDT and 46.39 ETH")
-    //     let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
-    //     console.log(`1 ETH = ${ethPriceBeforeSwap.substring(0, 4)} USDT`)
+        console.log("slippage:", (Math.abs((13.02 * 4495 - 42011) / (13.02 * 4495)) * 100).toFixed(2), "%");
+    });
 
-    //     const balanceA_t0 = await USDT.balanceOf(user1.address);
-    //     const swapAmount = ethers.utils.parseEther("3.62");
-    //     await SberAMM.connect(user1).swap(secondPID, TokenC.address, swapAmount);
-    //     const balanceA_t1 = await USDT.balanceOf(user1.address);
+    it("Third PID: Swap", async () => {
+        console.log("Swap 3.62 ETH to DAI in liquidity pool with 107,989 DAI and 46.39 ETH");
+        let ethPriceBeforeSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH before swap = ${ethPriceBeforeSwap.substring(0, 6)} DAI`);
 
-    //     let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(secondPID, TokenC.address))
-    //     console.log(`1 ETH = ${ethPriceAfterSwap.substring(0, 4)} USDT`)
+        const balanceDAI_t0 = await DAI.balanceOf(user1.address);
+        const swapAmount = ethers.utils.parseEther("3.62");
+        await SberAMM.connect(user1).swap(thirdPID, WETH.address, swapAmount);
+        const balanceDAI_t1 = await DAI.balanceOf(user1.address);
 
-    //     let amountAOut = ethers.utils.formatEther(balanceA_t1.sub(balanceA_t0));
-    //     let amountAOutParseEther = ethers.utils.parseEther(amountAOut)
-    //     console.log(`Was swap 3.62 ETH to ${(Number(amountAOut).toFixed(0))} USDT`)
+        let ethPriceAfterSwap = ethers.utils.formatEther(await SberAMM.exchangeRate(thirdPID, DAI.address));
+        console.log(`1 ETH after swap = ${ethPriceAfterSwap.substring(0, 6)} DAI`);
 
-    //     // let slippage = ((Number(swapAmount) - Number(amountAOutParseEther)*Number(ethPriceBeforeSwap)) / Number(swapAmount) * 100).toFixed(2)
-    //     // console.log("slippage:", slippage, "%");
-    //     // let slippage2 = ((Number(swapAmount) - Number(amountAOutParseEther)*Number(ethPriceAfterSwap)) / Number(swapAmount) * 100).toFixed(2)
-    //     // console.log("slippage2:", slippage2, "%");
-    //     console.log("slippage:",  (Math.abs(3.62 * 2003 - 7796) / (3.62 * 2003) * 100).toFixed(2), "%");
+        let amountAOut = ethers.utils.formatEther(balanceDAI_t1.sub(balanceDAI_t0));
+        console.log(`Was swap 3.62 ETH to ${Number(amountAOut).toFixed(0)} DAI`);
 
-    //     let arr = await SberAMM.Pools(secondPID);
-    //     console.log("USDT in pool %s", (BigInt(arr[2]) / BigInt(10n ** 18n)).toString())
-    //     console.log("ETH in pool %s",(BigInt(arr[3]) / BigInt(10n ** 18n)).toString())
-    // });
+        console.log("slippage:", ((Math.abs(3.62 * 2003 - 7796) / (3.62 * 2003)) * 100).toFixed(2), "%");
+    });
+
+    it("Second PID: Withdraw and WithdrawFees", async () => {
+        expect(await SberAMM.connect(user2).viewEarnedFees(thirdPID, DAI.address)).greaterThan(0);
+        expect(await SberAMM.connect(user2).viewEarnedFees(thirdPID, WETH.address)).greaterThan(0);
+        let balanceDAI_t0 = await DAI.connect(user2).balanceOf(user2.address);
+        let balanceWETH_t0 = await WETH.connect(user2).balanceOf(user2.address);
+        await SberAMM.connect(user2).withdrawFees(thirdPID);
+        let balanceDAI_t1 = await DAI.connect(user2).balanceOf(user2.address);
+        let balanceWETH_t1 = await WETH.connect(user2).balanceOf(user2.address);
+        expect(balanceDAI_t1.sub(balanceDAI_t0)).greaterThan(0);
+        expect(balanceWETH_t1.sub(balanceWETH_t0)).greaterThan(0);
+        expect(await SberAMM.connect(user2).viewEarnedFees(thirdPID, DAI.address)).to.be.revertedWith("No pool shares to withdraw fees");
+        expect(await SberAMM.connect(user2).viewEarnedFees(thirdPID, WETH.address)).to.be.revertedWith("No pool shares to withdraw fees");
+
+        balanceDAI_t0 = await DAI.connect(user2).balanceOf(user2.address);
+        balanceWETH_t0 = await WETH.connect(user2).balanceOf(user2.address);
+        await SberAMM.connect(user2).withdraw(thirdPID);
+        balanceDAI_t1 = await DAI.connect(user2).balanceOf(user2.address);
+        balanceWETH_t1 = await WETH.connect(user2).balanceOf(user2.address);
+        expect(balanceDAI_t1.sub(balanceDAI_t0)).greaterThan(0);
+        expect(balanceWETH_t1.sub(balanceWETH_t0)).greaterThan(0);
+        await expect(SberAMM.connect(user2).withdraw(thirdPID)).to.be.revertedWith("No pool shares to withdraw");
+        await expect(SberAMM.connect(user2).withdrawPreview(thirdPID)).to.be.revertedWith("No pool shares to withdraw");
+        await expect(SberAMM.connect(user2).withdrawFees(thirdPID)).to.be.revertedWith("No pool shares to withdraw fees");
+        expect(await WETH.balanceOf(SberAMM.address)).to.be.eq(0);
+        expect(await DAI.balanceOf(SberAMM.address)).to.be.eq(0);
+    });
 });
