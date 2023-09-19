@@ -107,11 +107,13 @@ contract SberAMM is Admin {
 
         uint totalLiquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt().unwrap();
 
-        PoolShares[msg.sender][PID] += totalLiquidity;
-        Pools[PID].totalShares += totalLiquidity;
+        unchecked {
+            PoolShares[msg.sender][PID] += totalLiquidity;
+            Pools[PID].totalShares += totalLiquidity;
 
-        Pools[PID].amount0 += amount_token0;
-        Pools[PID].amount1 += amount_token1;
+            Pools[PID].amount0 += amount_token0;
+            Pools[PID].amount1 += amount_token1;
+        }
     }
 
     /**
