@@ -18,27 +18,32 @@ async function deploy(): Promise<void> {
 
     const [owner, otherAccount] = await ethers.getSigners();
 
+    const GAS_LIMIT = 5000000; // Adjust this value based on your contract's complexity
+    const options = {
+        gasLimit: GAS_LIMIT,
+    };
+
     const ERC20_token = await ethers.getContractFactory("Token");
-    const tokenA = await ERC20_token.deploy();
+    const tokenA = await ERC20_token.deploy(options);
     await tokenA.deployed();
     console.log("tokenA deployed");
 
-    const tokenB = await ERC20_token.deploy();
+    const tokenB = await ERC20_token.deploy(options);
     await tokenB.deployed();
     console.log("tokenB deployed");
 
     const DIVIDEND_TOKEN = await ethers.getContractFactory("DividendToken");
-    const dividendToken = await DIVIDEND_TOKEN.deploy();
+    const dividendToken = await DIVIDEND_TOKEN.deploy(options);
     await dividendToken.deployed();
     console.log("dividendToken deployed");
 
     const PAYMENT_SPLITTER = await ethers.getContractFactory("PaymentSplitter");
-    const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address);
+    const splitter = await PAYMENT_SPLITTER.deploy(dividendToken.address, options);
     await splitter.deployed();
     console.log("splitter deployed");
 
     const AMM = await ethers.getContractFactory("SberAMM");
-    const amm = await AMM.deploy();
+    const amm = await AMM.deploy(options);
     await amm.deployed();
 
     /*   
