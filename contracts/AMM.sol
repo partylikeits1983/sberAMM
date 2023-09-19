@@ -107,6 +107,7 @@ contract SberAMM is Admin {
 
         uint totalLiquidity = (ud(amount_token0).mul(ud(amount_token1))).sqrt().unwrap();
 
+        // gas saving
         unchecked {
             PoolShares[msg.sender][PID] += totalLiquidity;
             Pools[PID].totalShares += totalLiquidity;
@@ -272,9 +273,10 @@ contract SberAMM is Admin {
         uint feeToWithdraw1 = (ud(pool.fee1).mul(ud(share))).div(ud(pool.totalShares)).sub(ud(userFees.fee1)).unwrap();
 
         if (feeToWithdraw0 != 0 || feeToWithdraw1 != 0) {
-            Fees[PID][msg.sender].fee0 += feeToWithdraw0;
-            Fees[PID][msg.sender].fee1 += feeToWithdraw1;
-
+            unchecked {
+                Fees[PID][msg.sender].fee0 += feeToWithdraw0;
+                Fees[PID][msg.sender].fee1 += feeToWithdraw1;
+            }
             Pools[PID].amount0 -= feeToWithdraw0;
             Pools[PID].amount1 -= feeToWithdraw1;
 
